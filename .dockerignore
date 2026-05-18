@@ -1,0 +1,43 @@
+# Build context = repo root for both backend and frontend Dockerfiles.
+# Keep contexts small so layer hashing is stable and pushes are fast.
+
+# VCS / CI
+.git
+.gitignore
+.github
+.gitea
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.swp
+
+# Secrets — must never enter an image layer
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Per-package noise
+**/node_modules
+**/dist
+**/build
+**/.svelte-kit
+**/coverage
+**/.vitest-cache
+**/.cache
+**/*.log
+
+# Top-level dirs not used by image builds
+docs
+loadtest
+packages/sdk-go
+
+# Compose / orchestration files (Dockerfiles don't need them inside the image)
+docker-compose*.yml
+
+# Test artefacts
+**/test-results
+**/playwright-report

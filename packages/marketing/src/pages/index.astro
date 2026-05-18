@@ -1,0 +1,159 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import Footer from "../components/Footer.astro";
+---
+
+<BaseLayout
+  title="granith — secrets, decrypted client-side"
+  description="A secrets manager you operate from the command line. The server ships ciphertext. Your CLI does the rest."
+>
+  <SiteHeader />
+
+  <main>
+    <!-- Hero playback -->
+    <section class="relative">
+      <div class="mx-auto max-w-5xl px-5 pt-16 pb-20 sm:px-8 sm:pt-24 sm:pb-28">
+        <div class="section-rule mb-8">
+          <span>granith(1)</span>
+        </div>
+
+        <h1 class="max-w-3xl text-2xl font-medium leading-[1.25] tracking-tight text-[#e4e4ef] sm:text-4xl sm:leading-[1.15]">
+          Secrets you <span class="text-[#818cf8]">decrypt locally</span>,
+          rotate from your shell, audit on the same wire.
+        </h1>
+
+        <p class="mt-5 max-w-2xl text-sm leading-relaxed text-[#8b8ba0] sm:text-base">
+          A zero-knowledge config vault and a small Go CLI. The server stores ciphertext;
+          your CLI does the rest.
+        </p>
+
+        <div class="mt-10 chevrons chevrons--lg chevrons--strong relative border border-[#2e2e3e] bg-[#0a0a0f]/90 p-5 sm:p-7">
+          <div class="mb-4 flex items-center gap-2 text-[11px] text-[#8b8ba0]">
+            <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#ef4444]/70"></span>
+            <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#f59e0b]/70"></span>
+            <span class="inline-block h-2.5 w-2.5 rounded-full bg-[#22c55e]/70"></span>
+            <span class="ml-2">~ &nbsp;·&nbsp; zsh &nbsp;·&nbsp; granith run</span>
+          </div>
+<pre class="overflow-x-auto text-[13px] leading-7"><code><span class="text-[#8b8ba0]">$</span> <span class="text-[#e4e4ef]">go install github.com/adamori/granith/cmd/granith@latest</span>
+<span class="text-[#8b8ba0]">$</span> <span class="text-[#e4e4ef]">export GRANITH_SERVER=https://api.granith.dev</span>
+<span class="text-[#8b8ba0]">$</span> <span class="text-[#e4e4ef]">export GRANITH_TOKEN=grnth_kQ8…7P.4xVm…Yz</span>
+<span class="text-[#8b8ba0]">$</span> <span class="text-[#e4e4ef] caret">granith run -- node server.js</span>
+<span class="text-[#818cf8]">▸</span> <span class="text-[#e4e4ef]">fetched bundle</span> <span class="text-[#8b8ba0]">·</span> <span class="text-[#e4e4ef]">3 secrets</span> <span class="text-[#8b8ba0]">·</span> <span class="text-[#e4e4ef]">142 bytes</span> <span class="text-[#8b8ba0]">·</span> <span class="text-[#e4e4ef]">etag d4f1…</span>
+<span class="text-[#818cf8]">▸</span> <span class="text-[#e4e4ef]">decrypted in 11ms</span> <span class="text-[#8b8ba0]">·</span> <span class="text-[#e4e4ef]">running command</span>
+<span class="text-[#22c55e]">listening on :3000</span></code></pre>
+        </div>
+
+        <div class="mt-8 flex flex-wrap gap-3 text-sm">
+          <a
+            href="https://app.granith.dev/register"
+            class="chevrons inline-flex items-center gap-2 border border-[#6366f1] bg-[#6366f1]/10 px-4 py-2.5 text-[#e4e4ef] transition-colors hover:bg-[#6366f1]/20"
+          >
+            redeem invite
+            <span class="text-[#818cf8]">→</span>
+          </a>
+          <a
+            href="https://app.granith.dev/login"
+            class="inline-flex items-center px-2 py-2.5 text-[#8b8ba0] underline-offset-4 hover:text-[#e4e4ef] hover:underline"
+          >
+            already a member? log in
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- One short section explaining what happened, with one curl example -->
+    <section class="relative border-t border-[#2e2e3e]/60 bg-[#0a0a0f]/70">
+      <div class="mx-auto max-w-5xl px-5 py-20 sm:px-8 sm:py-24">
+        <div class="section-rule mb-8">
+          <span>what just happened</span>
+        </div>
+
+        <p class="max-w-2xl text-[15px] leading-[1.75] text-[#a5a5b8]">
+          The CLI fetched a ciphertext bundle, unwrapped the project key locally with the
+          token, decrypted in process memory, and exec'd your command with the values as
+          env vars. The server returned bytes; it never held a key that could read them.
+        </p>
+
+        <div class="mt-10 chevrons chevrons--on-hover relative max-w-3xl border border-[#2e2e3e] bg-[#14141f]/70 p-5 sm:p-6">
+          <div class="mb-2 text-[10px] uppercase tracking-[0.18em] text-[#8b8ba0]">subsequent polls cost nothing</div>
+<pre class="overflow-x-auto text-[12.5px] leading-6"><code><span class="text-[#8b8ba0]">$</span> <span class="text-[#e4e4ef]">curl -sI -H 'if-none-match: "d4f1…"' \</span>
+    <span class="text-[#e4e4ef]">-H "authorization: bearer $GRANITH_TOKEN" \</span>
+    <span class="text-[#e4e4ef]">https://api.granith.dev/api/v1/bundle</span>
+<span class="text-[#818cf8]">HTTP/2 304</span></code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Audit, single concrete row -->
+    <section class="relative border-t border-[#2e2e3e]/60">
+      <div class="mx-auto max-w-5xl px-5 py-20 sm:px-8 sm:py-24">
+        <div class="section-rule mb-8">
+          <span>audit</span>
+        </div>
+
+        <p class="max-w-2xl text-[15px] leading-[1.75] text-[#a5a5b8]">
+          One row per bundle fetch. No secret names, no values, no labels. Enough to
+          spot a stolen token; not enough to leak which secret your process touches when.
+        </p>
+
+        <div class="mt-10 chevrons chevrons--on-hover relative max-w-3xl border border-[#2e2e3e] bg-[#14141f]/70 p-5 sm:p-6">
+<pre class="overflow-x-auto text-[12.5px] leading-6 text-[#e4e4ef]"><code>&#123;
+  <span class="text-[#818cf8]">"ts"</span>:          <span class="text-[#22c55e]">"2026-05-15T09:42:11Z"</span>,
+  <span class="text-[#818cf8]">"actor_id"</span>:    <span class="text-[#22c55e]">"tok_d8e2…"</span>,
+  <span class="text-[#818cf8]">"action"</span>:      <span class="text-[#22c55e]">"bundle.fetch"</span>,
+  <span class="text-[#818cf8]">"ip"</span>:          <span class="text-[#22c55e]">"203.0.113.42"</span>,
+  <span class="text-[#818cf8]">"user_agent"</span>:  <span class="text-[#22c55e]">"granith-go/0.5.0"</span>
+&#125;</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Honest invite / beta -->
+    <section class="relative border-t border-[#2e2e3e]/60 bg-[#0a0a0f]/70">
+      <div class="mx-auto max-w-5xl px-5 py-20 sm:px-8 sm:py-24">
+        <div class="section-rule mb-8">
+          <span>getting in</span>
+        </div>
+
+        <div class="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+          <div>
+            <h2 class="text-xl font-medium text-[#e4e4ef] sm:text-2xl">
+              Invite-only, beta, single-user.
+            </h2>
+            <p class="mt-4 max-w-xl text-sm leading-relaxed text-[#8b8ba0]">
+              The internal security review is still open. We'd rather have a small honest
+              beta than a big dishonest launch.
+            </p>
+            <p class="mt-6 max-w-xl text-sm leading-relaxed text-[#8b8ba0]">
+              Want in? Message me on Telegram
+              <a href="https://t.me/paneelmaja" class="text-[#e4e4ef] underline decoration-[#2e2e3e] underline-offset-4 hover:decoration-[#6366f1]">@paneelmaja</a>
+              or email
+              <a href="mailto:adam@alibiro.com" class="text-[#e4e4ef] underline decoration-[#2e2e3e] underline-offset-4 hover:decoration-[#6366f1]">adam@alibiro.com</a>.
+              Tell me what you'd use it for and I'll send a code.
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-3">
+            <a
+              href="https://app.granith.dev/register"
+              class="chevrons relative flex items-center justify-between border border-[#6366f1] bg-[#6366f1]/10 px-5 py-4 text-[#e4e4ef] transition-colors hover:bg-[#6366f1]/20"
+            >
+              <span class="text-sm">have a code? redeem invite</span>
+              <span class="text-[#818cf8]">→</span>
+            </a>
+            <a
+              href="https://app.granith.dev/login"
+              class="flex items-center justify-between border border-[#2e2e3e] px-5 py-4 text-[#e4e4ef] transition-colors hover:border-[#6366f1]/60"
+            >
+              <span class="text-sm">already a member? log in</span>
+              <span class="text-[#8b8ba0]">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <Footer />
+</BaseLayout>

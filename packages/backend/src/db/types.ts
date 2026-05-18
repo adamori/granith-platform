@@ -1,0 +1,115 @@
+import type { ColumnType, Generated, JSONColumnType } from 'kysely';
+
+export interface Database {
+  users: UsersTable;
+  invite_codes: InviteCodesTable;
+  sessions: SessionsTable;
+  opaque_login_state: OpaqueLoginStateTable;
+  projects: ProjectsTable;
+  secrets: SecretsTable;
+  tokens: TokensTable;
+  audit_log: AuditLogTable;
+}
+
+export interface UsersTable {
+  id: Generated<string>;
+  handle: string;
+  kdf_params: JSONColumnType<KdfParams>;
+  opaque_record: Buffer;
+  invite_code_used: string;
+  created_at: ColumnType<Date, string | undefined, string | undefined>;
+  updated_at: ColumnType<Date, string | undefined, string | undefined>;
+}
+
+export interface KdfParams {
+  algorithm: string;
+  time_cost: number;
+  memory_cost: number;
+  parallelism: number;
+  salt_length: number;
+}
+
+export interface InviteCodesTable {
+  code: string;
+  created_by: string | null;
+  expires_at: Date;
+  used_at: Date | null;
+  used_by: string | null;
+}
+
+export interface SessionsTable {
+  id: Generated<string>;
+  user_id: string;
+  expires_at: Date;
+  created_at: ColumnType<Date, string | undefined, string | undefined>;
+}
+
+export interface OpaqueLoginStateTable {
+  id: Generated<string>;
+  user_id: string;
+  state: Buffer;
+  expires_at: Date;
+}
+
+export interface ProjectsTable {
+  id: Generated<string>;
+  owner_id: string;
+  name_ct: Buffer;
+  name_nonce: Buffer;
+  wrapped_pdk_for_user: Buffer;
+  wrap_nonce_for_user: Buffer;
+  created_at: ColumnType<Date, string | undefined, string | undefined>;
+  updated_at: ColumnType<Date, string | undefined, string | undefined>;
+  deleted_at: Date | null;
+}
+
+export interface SecretsTable {
+  id: Generated<string>;
+  project_id: string;
+  owner_id: string;
+  wrapped_item_key: Buffer;
+  wik_nonce: Buffer;
+  name_ct: Buffer;
+  name_nonce: Buffer;
+  value_ct: Buffer;
+  value_nonce: Buffer;
+  version: ColumnType<number, number | undefined, number>;
+  created_at: ColumnType<Date, string | undefined, string | undefined>;
+  updated_at: ColumnType<Date, string | undefined, string | undefined>;
+  deleted_at: Date | null;
+}
+
+export interface TokensTable {
+  token_id: Buffer;
+  project_id: string;
+  owner_id: string;
+  wrapped_pdk: Buffer;
+  wrap_nonce: Buffer;
+  scopes: JSONColumnType<TokenScopes>;
+  label_ct: Buffer | null;
+  label_nonce: Buffer | null;
+  ip_allowlist: string[] | null;
+  expires_at: Date;
+  created_at: ColumnType<Date, string | undefined, string | undefined>;
+  last_used_at: Date | null;
+  revoked_at: Date | null;
+  usage_counter: number | null;
+}
+
+export interface TokenScopes {
+  read: boolean;
+  write?: boolean;
+}
+
+export interface AuditLogTable {
+  id: Generated<string>;
+  actor_type: 'user' | 'token';
+  actor_id: string;
+  project_id: string | null;
+  action: string;
+  resource_id: string | null;
+  ip: string | null;
+  user_agent: string | null;
+  metadata: JSONColumnType<Record<string, unknown>> | null;
+  ts: ColumnType<Date, string | undefined, string | undefined>;
+}

@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface: #0a0a0f;
+  --color-surface-raised: #14141f;
+  --color-surface-overlay: #1e1e2e;
+  --color-border: #2e2e3e;
+  --color-border-focus: #6366f1;
+  --color-text: #e4e4ef;
+  --color-text-muted: #8b8ba0;
+  --color-primary: #6366f1;
+  --color-primary-hover: #818cf8;
+  --color-danger: #ef4444;
+  --color-danger-hover: #f87171;
+  --color-success: #22c55e;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+body {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+}
+
+.fancy-card {
+  position: relative;
+  border-radius: 12px;
+  isolation: isolate;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.03),
+    0 0 60px -15px rgba(99, 102, 241, 0.3);
+}
+
+/* hairline directional border, very dim */
+.fancy-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(196, 181, 253, 0.18) 0%,
+    rgba(129, 140, 248, 0.08) 22%,
+    rgba(99, 102, 241, 0.04) 50%,
+    rgba(99, 102, 241, 0.05) 82%,
+    rgba(165, 180, 252, 0.12) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  /* on hi-dpi this trims the visual thickness to roughly half a CSS pixel */
+  transform: translateZ(0);
+}
+
+@media (min-resolution: 1.5dppx) {
+  .fancy-card::before {
+    padding: 0.5px;
+  }
+}
+
+/* refined corner brackets on .fancy-card (consumes the same chevron pattern) */
+.fancy-card::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  pointer-events: none;
+  --cc: rgba(196, 181, 253, 0.4);
+  --ct: 1px;
+  --cs: 10px;
+  background:
+    linear-gradient(var(--cc), var(--cc)) top left / var(--cs) var(--ct) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) top left / var(--ct) var(--cs) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) top right / var(--cs) var(--ct) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) top right / var(--ct) var(--cs) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) bottom left / var(--cs) var(--ct) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) bottom left / var(--ct) var(--cs) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) bottom right / var(--cs) var(--ct) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) bottom right / var(--ct) var(--cs) no-repeat;
+}
+
+/* ---- Reusable chevron corners ----
+   Apply to any element. Establishes position:relative implicitly,
+   then renders 4 L-shaped corner brackets via ::after.
+   Modifiers: --sm / --lg sizing, --success / --strong color,
+              --on-focus / --on-hover visibility gating. */
+.chevrons {
+  position: relative;
+}
+
+.chevrons::after {
+  content: "";
+  position: absolute;
+  inset: var(--chev-inset, -6px);
+  pointer-events: none;
+  --cc: var(--chev-color, rgba(196, 181, 253, 0.45));
+  --ct: 1px;
+  --cs: var(--chev-size, 9px);
+  background:
+    linear-gradient(var(--cc), var(--cc)) top left / var(--cs) var(--ct) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) top left / var(--ct) var(--cs) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) top right / var(--cs) var(--ct) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) top right / var(--ct) var(--cs) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) bottom left / var(--cs) var(--ct) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) bottom left / var(--ct) var(--cs) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) bottom right / var(--cs) var(--ct) no-repeat,
+    linear-gradient(var(--cc), var(--cc)) bottom right / var(--ct) var(--cs) no-repeat;
+}
+
+.chevrons--sm { --chev-size: 6px; --chev-inset: -3px; }
+.chevrons--lg { --chev-size: 13px; --chev-inset: -9px; }
+.chevrons--success { --chev-color: rgba(134, 239, 172, 0.65); }
+.chevrons--strong { --chev-color: rgba(196, 181, 253, 0.75); }
+.chevrons--danger { --chev-color: rgba(248, 113, 113, 0.6); }
+
+.chevrons--on-focus::after,
+.chevrons--on-hover::after {
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.chevrons--on-focus:focus-within::after { opacity: 1; }
+.chevrons--on-hover:hover::after { opacity: 1; }
