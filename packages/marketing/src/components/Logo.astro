@@ -1,0 +1,28 @@
+---
+interface Props {
+  size?: number;
+}
+const { size = 22 } = Astro.props;
+---
+
+<a href="/" class="inline-flex items-center gap-2.5 text-[#e4e4ef] hover:text-white">
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 32 32"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <rect width="32" height="32" rx="6" fill="#6366f1" />
+    <text
+      x="16"
+      y="23"
+      text-anchor="middle"
+      font-family="JetBrains Mono, monospace"
+      font-size="18"
+      font-weight="bold"
+      fill="white">G</text
+    >
+  </svg>
+  <span class="text-base font-bold tracking-wide">granith</span>
+</a>

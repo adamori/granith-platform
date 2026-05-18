@@ -1,0 +1,20 @@
+---
+import Logo from "./Logo.astro";
+import BetaChip from "./BetaChip.astro";
+---
+
+<header class="relative z-20 border-b border-[#2e2e3e]/60 bg-[#0a0a0f]/80 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
+    <div class="flex items-center gap-4">
+      <Logo />
+      <BetaChip class="hidden sm:inline-flex" />
+    </div>
+    <nav class="flex items-center gap-2 text-xs sm:gap-5 sm:text-[13px] text-[#8b8ba0]">
+      <a
+        href="https://app.granith.dev"
+        class="rounded-sm border border-[#2e2e3e] px-3 py-1.5 text-[#e4e4ef] transition-colors hover:border-[#6366f1] hover:text-white"
+        >open app →</a
+      >
+    </nav>
+  </div>
+</header>
