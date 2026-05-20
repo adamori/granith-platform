@@ -53,7 +53,7 @@ export async function createApp(config: Config) {
         ? { target: 'pino-pretty' }
         : undefined,
     },
-    trustProxy: config.TRUST_PROXY || false,
+    trustProxy: config.TRUST_PROXY.length > 0 ? config.TRUST_PROXY : false,
     bodyLimit: config.BODY_LIMIT,
   });
 
