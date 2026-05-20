@@ -1,7 +1,8 @@
 <script lang="ts">
   import '../app.css';
-  import { initCrypto, isReady } from '$lib/crypto/init.js';
+  import { initCrypto } from '$lib/crypto/init.js';
   import { onMount } from 'svelte';
+  import { Stage } from '$lib/components/spatial';
 
   let { children } = $props();
   let cryptoReady = $state(false);
@@ -17,15 +18,16 @@
   });
 </script>
 
-{#if error}
-  <div class="flex h-screen items-center justify-center">
-    <p class="text-danger text-lg">{error}</p>
-  </div>
-{:else if !cryptoReady}
-  <div class="flex h-screen items-center justify-center flex-col gap-3">
-    <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-    <p class="text-text-muted text-sm">Preparing crypto engine…</p>
-  </div>
-{:else}
-  {@render children()}
-{/if}
+<Stage>
+  {#if error}
+    <div style="min-height: 100vh; display: grid; place-items: center;">
+      <p class="sp-alert sp-alert--danger">{error}</p>
+    </div>
+  {:else if !cryptoReady}
+    <div style="min-height: 100vh; display: grid; place-items: center;">
+      <p class="sp-mini">Preparing crypto engine…</p>
+    </div>
+  {:else}
+    {@render children()}
+  {/if}
+</Stage>

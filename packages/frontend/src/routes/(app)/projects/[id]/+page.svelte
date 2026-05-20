@@ -8,6 +8,7 @@
   import * as keys from '$lib/crypto/keys.js';
   import * as s from '$lib/crypto/sodium.js';
   import { getKek } from '$lib/stores/auth.svelte.js';
+  import { Glass, PageHead, Button, Field, Empty } from '$lib/components/spatial';
 
   let loading = $state(true);
   let showAdd = $state(false);
@@ -109,143 +110,72 @@
   }
 </script>
 
-<div class="space-y-6">
-  <div class="flex items-center justify-between">
-    <div>
-      <a href="/projects" class="text-text-muted text-sm hover:text-primary transition-colors">&larr; Projects</a>
-      <h1 class="text-xl font-bold mt-1">{project?.name ?? '…'}</h1>
-    </div>
-    <div class="flex gap-2">
-      <a
-        href="/projects/{projectId}/audit"
-        class="rounded-md border border-border px-3 py-1.5 text-sm text-text-muted hover:border-border-focus transition-colors"
-      >
-        Audit
-      </a>
-      <a
-        href="/projects/{projectId}/tokens"
-        class="rounded-md border border-border px-3 py-1.5 text-sm text-text-muted hover:border-border-focus transition-colors"
-      >
-        Tokens
-      </a>
-      <button
-        onclick={handleRotatePDK}
-        disabled={rotating}
-        class="rounded-md border border-danger/50 px-3 py-1.5 text-sm text-danger hover:border-danger hover:bg-danger/5 disabled:opacity-50 transition-colors"
-      >
-        {rotating ? 'Rotating…' : 'Rotate Keys'}
-      </button>
-      <button
-        onclick={() => showAdd = !showAdd}
-        class="rounded-md bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary-hover transition-colors"
-      >
-        + Add Secret
-      </button>
-    </div>
-  </div>
+<PageHead back="projects" backHref="/projects" title={project?.name ?? '…'}>
+  {#snippet actions()}
+    <Button variant="link" href="/projects/{projectId}/audit">audit</Button>
+    <Button variant="bordered" href="/projects/{projectId}/tokens">tokens</Button>
+    <Button variant="danger" onclick={handleRotatePDK} disabled={rotating}>
+      {rotating ? 'rotating…' : 'rotate keys'}
+    </Button>
+    <Button onclick={() => (showAdd = !showAdd)}>+ add secret</Button>
+  {/snippet}
+  <p class="sp-mini" style="margin-top: 4px;">
+    {getSecrets().length} secret{getSecrets().length === 1 ? '' : 's'} · wrapped by pdk · 142 bytes / bundle
+  </p>
+</PageHead>
 
-  {#if rotateError}
-    <p class="text-danger text-sm">{rotateError}</p>
-  {/if}
+{#if rotateError}
+  <p class="sp-alert sp-alert--danger" style="margin-bottom: 18px;">{rotateError}</p>
+{/if}
 
-  {#if showAdd}
-    <form onsubmit={handleAdd} class="border border-border rounded-md p-4 space-y-3">
-      <div class="flex gap-3">
-        <div class="chevrons chevrons--on-focus chevrons--sm flex-1">
-          <input
-            type="text"
-            bind:value={newName}
-            placeholder="SECRET_NAME"
-            autofocus
-            class="w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-text placeholder:text-text-muted focus:border-border-focus focus:outline-none font-mono text-sm"
-          />
-        </div>
-      </div>
-      <div class="chevrons chevrons--on-focus chevrons--sm">
-        <textarea
-          bind:value={newValue}
-          placeholder="Secret value…"
-          rows="3"
-          class="w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-text placeholder:text-text-muted focus:border-border-focus focus:outline-none font-mono text-sm resize-y"
-        ></textarea>
-      </div>
-      <div class="flex gap-2">
-        <button
-          type="submit"
-          disabled={creating || !newName.trim()}
-          class="rounded-md bg-primary px-4 py-2 text-white text-sm hover:bg-primary-hover disabled:opacity-50 transition-colors"
-        >
-          {creating ? '…' : 'Save'}
-        </button>
-        <button
-          type="button"
-          onclick={() => { showAdd = false; newName = ''; newValue = ''; }}
-          class="rounded-md border border-border px-3 py-2 text-text-muted text-sm hover:border-border-focus transition-colors"
-        >
-          Cancel
-        </button>
+{#if showAdd}
+  <Glass depth={0.3} style="padding: 22px; margin-bottom: 18px;">
+    <form onsubmit={handleAdd} style="display: flex; flex-direction: column; gap: 14px;">
+      <Field id="new-name" label="Name" bind:value={newName} placeholder="SECRET_NAME" autofocus />
+      <Field id="new-value" type="textarea" label="Value" bind:value={newValue} placeholder="Secret value…" rows={3} />
+      <div style="display: flex; gap: 8px;">
+        <Button type="submit" disabled={creating || !newName.trim()}>{creating ? '…' : 'save'}</Button>
+        <Button variant="link" onclick={() => { showAdd = false; newName = ''; newValue = ''; }}>cancel</Button>
       </div>
     </form>
-  {/if}
+  </Glass>
+{/if}
 
-  {#if loading}
-    <p class="text-text-muted">Loading…</p>
-  {:else if getSecrets().length === 0}
-    <div class="text-center py-12">
-      <p class="text-text-muted">No secrets in this project.</p>
-    </div>
-  {:else}
-    <div class="space-y-2">
-      {#each getSecrets() as secret (secret.id)}
-        {#if editingId === secret.id}
-          <form onsubmit={handleUpdate} class="chevrons chevrons--strong border border-border-focus rounded-md p-4 space-y-3">
-            <div class="chevrons chevrons--on-focus chevrons--sm">
-              <input
-                type="text"
-                bind:value={editName}
-                class="w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-text focus:border-border-focus focus:outline-none font-mono text-sm"
-              />
-            </div>
-            <div class="chevrons chevrons--on-focus chevrons--sm">
-              <textarea
-                bind:value={editValue}
-                rows="3"
-                class="w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-text focus:border-border-focus focus:outline-none font-mono text-sm resize-y"
-              ></textarea>
-            </div>
-            <div class="flex gap-2">
-              <button type="submit" class="rounded-md bg-primary px-3 py-1.5 text-white text-sm hover:bg-primary-hover transition-colors">
-                Update
-              </button>
-              <button type="button" onclick={() => editingId = null} class="text-text-muted text-sm">Cancel</button>
+{#if loading}
+  <p class="sp-mini">Loading…</p>
+{:else if getSecrets().length === 0}
+  <Empty title="No secrets in this project." hint="Add one with the button above, or via the CLI: granith secret put NAME=value" />
+{:else}
+  <div class="sp-stack">
+    {#each getSecrets() as secret, i (secret.id)}
+      {#if editingId === secret.id}
+        <Glass depth={0.2} style="padding: 20px;">
+          <form onsubmit={handleUpdate} style="display: flex; flex-direction: column; gap: 12px;">
+            <Field id="en-{secret.id}" label="Name" bind:value={editName} />
+            <Field id="ev-{secret.id}" label="Value" type="textarea" bind:value={editValue} rows={3} />
+            <div style="display: flex; gap: 8px;">
+              <Button type="submit">update</Button>
+              <Button variant="link" onclick={() => (editingId = null)}>cancel</Button>
             </div>
           </form>
-        {:else}
-          <div class="chevrons chevrons--on-hover chevrons--sm border border-border rounded-md p-4 hover:border-border-focus transition-colors">
-            <div class="flex items-start justify-between">
-              <div class="flex-1 min-w-0">
-                <p class="font-mono text-sm font-medium text-text">{secret.name}</p>
-                <p class="font-mono text-xs text-text-muted mt-1 truncate">{secret.value.length > 80 ? secret.value.slice(0, 80) + '…' : secret.value}</p>
-              </div>
-              <div class="flex gap-2 ml-4">
-                <button
-                  onclick={() => startEdit(secret)}
-                  class="text-text-muted hover:text-primary text-sm transition-colors"
-                >
-                  Edit
-                </button>
-                <button
-                  onclick={() => handleDelete(secret.id, secret.name)}
-                  class="text-text-muted hover:text-danger text-sm transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
+        </Glass>
+      {:else}
+        <div class="sp-row sp-parallax" style="--depth: {0.1 + (i % 4) * 0.04};">
+          <div style="display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 0;">
+              <p class="sp-row__title" style="margin: 0;">{secret.name}</p>
+              <p class="sp-row__value" style="margin: 6px 0 0;">
+                {secret.value.length > 80 ? secret.value.slice(0, 80) + '…' : secret.value}
+              </p>
             </div>
-            <p class="text-xs text-text-muted mt-2">v{secret.version}</p>
+            <div style="display: flex; gap: 4px; flex-shrink: 0;">
+              <Button variant="link" onclick={() => startEdit(secret)}>edit</Button>
+              <Button variant="link-danger" onclick={() => handleDelete(secret.id, secret.name)}>delete</Button>
+            </div>
           </div>
-        {/if}
-      {/each}
-    </div>
-  {/if}
-</div>
+          <p class="sp-row__version">v{secret.version}</p>
+        </div>
+      {/if}
+    {/each}
+  </div>
+{/if}
