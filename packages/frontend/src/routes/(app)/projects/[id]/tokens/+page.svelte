@@ -6,7 +6,8 @@
   import type { TokenResponse } from '$lib/api/tokens.js';
   import { generateTokenPair, wrapPDKForToken } from '$lib/crypto/keys.js';
   import { createHashAsync } from '$lib/crypto/hash.js';
-  import { toBase64, toBase64Standard, toHex } from '$lib/crypto/sodium.js';
+  import { toBase64Standard, toHex } from '$lib/crypto/sodium.js';
+  import { Glass, PageHead, Button, Field, Empty } from '$lib/components/spatial';
 
   const projectId = $derived(page.params.id!);
   const project = $derived(getProjectById(projectId));
@@ -95,151 +96,101 @@
       savingAllowlist = false;
     }
   }
+
+  const liveCount = $derived(tokens.filter((t) => !t.revoked_at).length);
 </script>
 
-<div class="space-y-6">
-  <div class="flex items-center justify-between">
-    <div>
-      <a href="/projects/{projectId}" class="text-text-muted text-sm hover:text-primary transition-colors">&larr; {project?.name ?? 'Project'}</a>
-      <h1 class="text-xl font-bold mt-1">Tokens</h1>
+<PageHead back={project?.name ?? 'Project'} backHref="/projects/{projectId}" title="Tokens">
+  {#snippet actions()}
+    <Button onclick={() => (showMint = !showMint)}>+ mint token</Button>
+  {/snippet}
+  <p class="sp-mini" style="margin-top: 4px;">
+    {liveCount} live · {tokens.length - liveCount} revoked · each token authorizes bundle.fetch on this project
+  </p>
+</PageHead>
+
+{#if mintedToken}
+  <div class="sp-reveal sp-parallax" style="--depth: 0.4; margin-bottom: 18px;">
+    <p class="sp-reveal__title">▸ token minted — copy it now. you won't see it again.</p>
+    <div class="sp-reveal__value">{mintedToken}</div>
+    <div class="sp-reveal__row">
+      <Button variant="primary" onclick={handleCopy}>{copied ? 'copied' : 'copy'}</Button>
+      <Button variant="link" onclick={dismissToken}>dismiss</Button>
     </div>
-    <button
-      onclick={() => showMint = !showMint}
-      class="rounded-md bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary-hover transition-colors"
-    >
-      + Mint Token
-    </button>
+    <p class="sp-reveal__hint">hint: your clipboard will NOT auto-clear. clear it manually within 10 minutes.</p>
   </div>
+{/if}
 
-  {#if mintedToken}
-    <div class="chevrons chevrons--success chevrons--lg border border-success/60 rounded-md p-4 space-y-3 bg-surface-raised/30 shadow-[0_0_30px_-10px_rgba(34,197,94,0.4)]">
-      <p class="text-sm font-medium text-success">Token minted — copy it now. You won't see it again.</p>
-      <div class="bg-surface-raised rounded-md p-3 font-mono text-xs break-all text-text">
-        {mintedToken}
+{#if showMint}
+  <Glass depth={0.3} style="padding: 22px; margin-bottom: 18px;">
+    <div style="display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap;">
+      <div style="min-width: 200px;">
+        <Field id="ttl" label="TTL (days)" type="number" bind:value={ttlDays} min={1} max={1095} />
       </div>
-      <div class="flex gap-2">
-        <button
-          onclick={handleCopy}
-          class="rounded-md bg-success px-3 py-1.5 text-sm text-white hover:opacity-90 transition-opacity"
-        >
-          {copied ? 'Copied!' : 'Copy'}
-        </button>
-        <button
-          onclick={dismissToken}
-          class="text-text-muted text-sm hover:text-text transition-colors"
-        >
-          Dismiss
-        </button>
-      </div>
-      <p class="text-xs text-text-muted">Hint: your clipboard will NOT auto-clear. Clear it manually within 10 minutes.</p>
+      <Button onclick={handleMint} disabled={minting}>{minting ? 'minting…' : 'mint'}</Button>
+      <Button variant="link" onclick={() => (showMint = false)}>cancel</Button>
     </div>
-  {/if}
+    <p class="sp-mini" style="margin-top: 14px;">
+      tokens expire after the ttl, or until you revoke them — whichever first.
+    </p>
+  </Glass>
+{/if}
 
-  {#if showMint}
-    <div class="border border-border rounded-md p-4 space-y-3">
-      <div>
-        <label for="ttl" class="block text-sm text-text-muted mb-1">TTL (days)</label>
-        <div class="chevrons chevrons--on-focus chevrons--sm w-32">
-          <input
-            id="ttl"
-            type="number"
-            bind:value={ttlDays}
-            min="1"
-            max="1095"
-            class="w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-text focus:border-border-focus focus:outline-none text-sm"
-          />
-        </div>
-      </div>
-      <div class="flex gap-2">
-        <button
-          onclick={handleMint}
-          disabled={minting}
-          class="rounded-md bg-primary px-4 py-2 text-white text-sm hover:bg-primary-hover disabled:opacity-50 transition-colors"
-        >
-          {minting ? 'Minting…' : 'Mint'}
-        </button>
-        <button
-          onclick={() => showMint = false}
-          class="text-text-muted text-sm"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  {/if}
-
-  {#if loading}
-    <p class="text-text-muted">Loading…</p>
-  {:else if tokens.length === 0}
-    <p class="text-text-muted text-center py-8">No tokens minted yet.</p>
-  {:else}
-    <div class="space-y-2">
-      {#each tokens as token (token.token_id)}
-        <div class="chevrons chevrons--sm border border-border rounded-md p-4 space-y-2 {token.revoked_at ? 'opacity-50' : ''} {editingTokenId === token.token_id ? 'chevrons--strong' : 'chevrons--on-hover'}">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="font-mono text-xs text-text">{token.token_id.slice(0, 16)}…</p>
-              <div class="flex gap-3 mt-1 text-xs text-text-muted">
-                <span>Expires {new Date(token.expires_at).toLocaleDateString()}</span>
-                {#if token.last_used_at}
-                  <span>Used {new Date(token.last_used_at).toLocaleDateString()}</span>
-                {/if}
-                {#if token.ip_allowlist?.length}
-                  <span>IPs: {token.ip_allowlist.join(', ')}</span>
-                {/if}
-                {#if token.revoked_at}
-                  <span class="text-danger">Revoked</span>
-                {/if}
-              </div>
+{#if loading}
+  <p class="sp-mini">Loading…</p>
+{:else if tokens.length === 0}
+  <Empty title="No tokens minted yet." hint="Mint one to let a service fetch this project's bundle." />
+{:else}
+  <div class="sp-stack">
+    {#each tokens as token, i (token.token_id)}
+      <div
+        class="sp-row sp-parallax {token.revoked_at ? 'sp-row--revoked' : ''}"
+        style="--depth: {0.1 + (i % 4) * 0.04};"
+      >
+        <div style="display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 0;">
+            <p style="margin: 0; font: 500 13px var(--sp-font); color: var(--sp-text); letter-spacing: -0.01em;">
+              {token.token_id.slice(0, 16)}…
+            </p>
+            <div style="display: flex; gap: 14px; margin-top: 6px; font-size: 11px; color: var(--sp-text-muted); flex-wrap: wrap; font-family: var(--sp-font);">
+              <span>expires {new Date(token.expires_at).toLocaleDateString()}</span>
+              {#if token.last_used_at}
+                <span>used {new Date(token.last_used_at).toLocaleDateString()}</span>
+              {:else}
+                <span style="color: var(--sp-text-dim);">never used</span>
+              {/if}
+              {#if token.ip_allowlist?.length}
+                <span>ip: {token.ip_allowlist.join(', ')}</span>
+              {/if}
+              {#if token.revoked_at}
+                <span style="color: var(--sp-danger);">· revoked</span>
+              {/if}
             </div>
-            {#if !token.revoked_at}
-              <div class="flex gap-2">
-                <button
-                  onclick={() => startEditAllowlist(token)}
-                  class="text-text-muted hover:text-primary text-sm transition-colors"
-                >
-                  IP Rules
-                </button>
-                <button
-                  onclick={() => handleRevoke(token.token_id)}
-                  class="text-text-muted hover:text-danger text-sm transition-colors"
-                >
-                  Revoke
-                </button>
-              </div>
-            {/if}
           </div>
-
-          {#if editingTokenId === token.token_id}
-            <div class="border-t border-border pt-2 space-y-2">
-              <label class="block text-xs text-text-muted">IP Allowlist (CIDR, comma or newline separated, empty = unrestricted)</label>
-              <div class="chevrons chevrons--on-focus chevrons--sm">
-                <textarea
-                  bind:value={allowlistInput}
-                  rows="2"
-                  placeholder="192.168.1.0/24, 10.0.0.1/32"
-                  class="w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-text text-xs font-mono focus:border-border-focus focus:outline-none resize-y"
-                ></textarea>
-              </div>
-              <div class="flex gap-2">
-                <button
-                  onclick={saveAllowlist}
-                  disabled={savingAllowlist}
-                  class="rounded-md bg-primary px-3 py-1 text-xs text-white hover:bg-primary-hover disabled:opacity-50 transition-colors"
-                >
-                  {savingAllowlist ? 'Saving…' : 'Save'}
-                </button>
-                <button
-                  onclick={() => editingTokenId = null}
-                  class="text-text-muted text-xs"
-                >
-                  Cancel
-                </button>
-              </div>
+          {#if !token.revoked_at}
+            <div style="display: flex; gap: 4px;">
+              <Button variant="link" onclick={() => startEditAllowlist(token)}>ip rules</Button>
+              <Button variant="link-danger" onclick={() => handleRevoke(token.token_id)}>revoke</Button>
             </div>
           {/if}
         </div>
-      {/each}
-    </div>
-  {/if}
-</div>
+        {#if editingTokenId === token.token_id}
+          <div style="border-top: 1px solid var(--sp-glass-border); padding-top: 14px; margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
+            <Field
+              id="al-{token.token_id}"
+              label="IP allowlist (CIDR, comma or newline separated, empty = unrestricted)"
+              type="textarea"
+              bind:value={allowlistInput}
+              placeholder="192.168.1.0/24, 10.0.0.1/32"
+              rows={2}
+            />
+            <div style="display: flex; gap: 8px;">
+              <Button onclick={saveAllowlist} disabled={savingAllowlist}>{savingAllowlist ? 'saving…' : 'save'}</Button>
+              <Button variant="link" onclick={() => (editingTokenId = null)}>cancel</Button>
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/each}
+  </div>
+{/if}

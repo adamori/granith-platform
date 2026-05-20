@@ -1,19 +1,19 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
   import { getUser, getKek } from '$lib/stores/auth.svelte.js';
   import { getProjects, loadProjects } from '$lib/stores/projects.svelte.js';
   import * as authApi from '$lib/api/auth.js';
   import * as opaqueClient from '$lib/crypto/opaque.js';
   import * as s from '$lib/crypto/sodium.js';
   import * as keys from '$lib/crypto/keys.js';
-  import { onMount } from 'svelte';
+  import { Glass, PageHead, Label, Button, Field } from '$lib/components/spatial';
 
   let currentPassword = $state('');
   let newPassword = $state('');
   let confirmPassword = $state('');
   let changing = $state(false);
   let error = $state('');
-  let success = $state('');
+  let success = $state(false);
 
   onMount(async () => {
     await loadProjects();
@@ -22,7 +22,7 @@
   async function handleChangePassword(e: Event) {
     e.preventDefault();
     error = '';
-    success = '';
+    success = false;
 
     if (newPassword !== confirmPassword) {
       error = 'Passwords do not match';
@@ -75,7 +75,7 @@
         rewrapped_pdks,
       });
 
-      success = 'Password changed. You will need to re-login on other devices.';
+      success = true;
       currentPassword = '';
       newPassword = '';
       confirmPassword = '';
@@ -87,63 +87,38 @@
   }
 </script>
 
-<div class="space-y-8 max-w-md">
-  <h1 class="text-xl font-bold">Settings</h1>
+<div class="sp-wrap--narrow">
+  <PageHead eyebrow="§04 · account" title="Settings">
+    <p class="sp-mini" style="margin-top: 4px;">
+      changing your password re-derives KEK and re-wraps every project key client-side.
+    </p>
+  </PageHead>
 
-  <section class="space-y-4">
-    <h2 class="text-lg font-semibold">Change Password</h2>
-    <p class="text-sm text-text-muted">This re-derives your KEK and re-wraps all project keys. Existing tokens are unaffected.</p>
-
-    <form onsubmit={handleChangePassword} class="space-y-3">
-      <div>
-        <label for="current-pw" class="block text-sm text-text-muted mb-1">Current Password</label>
-        <input
-          id="current-pw"
-          type="password"
-          bind:value={currentPassword}
-          required
-          autocomplete="current-password"
-          class="w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-text focus:border-border-focus focus:outline-none"
-        />
-      </div>
-      <div>
-        <label for="new-pw" class="block text-sm text-text-muted mb-1">New Password</label>
-        <input
-          id="new-pw"
-          type="password"
-          bind:value={newPassword}
-          required
-          minlength="8"
-          autocomplete="new-password"
-          class="w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-text focus:border-border-focus focus:outline-none"
-        />
-      </div>
-      <div>
-        <label for="confirm-pw" class="block text-sm text-text-muted mb-1">Confirm New Password</label>
-        <input
-          id="confirm-pw"
-          type="password"
-          bind:value={confirmPassword}
-          required
-          autocomplete="new-password"
-          class="w-full rounded-md border border-border bg-surface-raised px-3 py-2 text-text focus:border-border-focus focus:outline-none"
-        />
-      </div>
-
-      {#if error}
-        <p class="text-danger text-sm">{error}</p>
-      {/if}
+  <Glass depth={0.3} style="padding: clamp(20px, 3vw, 32px);">
+    <form onsubmit={handleChangePassword} style="display: flex; flex-direction: column; gap: 14px;">
+      <Field id="cur" label="Current password" type="password" bind:value={currentPassword} autocomplete="current-password" required />
+      <Field id="nw" label="New password" type="password" bind:value={newPassword} autocomplete="new-password" required minlength={8} />
+      <Field id="conf" label="Confirm new password" type="password" bind:value={confirmPassword} autocomplete="new-password" required />
+      {#if error}<p class="sp-alert sp-alert--danger">{error}</p>{/if}
       {#if success}
-        <p class="text-success text-sm">{success}</p>
+        <p class="sp-mini" style="color: var(--sp-success);">▸ password updated. running tokens are unaffected.</p>
       {/if}
-
-      <button
-        type="submit"
-        disabled={changing || !currentPassword || !newPassword || !confirmPassword}
-        class="rounded-md bg-primary px-4 py-2 text-white text-sm hover:bg-primary-hover disabled:opacity-50 transition-colors"
-      >
-        {changing ? 'Changing…' : 'Change Password'}
-      </button>
+      <div style="display: flex; gap: 10px;">
+        <Button type="submit" disabled={changing || !currentPassword || !newPassword || !confirmPassword}>
+          {changing ? 're-wrapping keys…' : 'change password'}
+        </Button>
+      </div>
     </form>
-  </section>
+  </Glass>
+
+  <div style="margin-top: 28px;">
+    <Glass depth={0.2} deep style="padding: 20px 24px;">
+      <Label>§ what happens</Label>
+      <ol class="sp-mono" style="margin: 14px 0 0; padding-left: 20px; line-height: 1.85;">
+        <li>old password derives current KEK · all project keys decrypted in-memory</li>
+        <li>new password derives new KEK · same project keys re-wrapped</li>
+        <li>only the new wrapped blob is sent to the server. plaintext never leaves.</li>
+      </ol>
+    </Glass>
+  </div>
 </div>
