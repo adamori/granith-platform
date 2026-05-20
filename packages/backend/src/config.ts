@@ -10,7 +10,10 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  TRUST_PROXY: z.string().default(''),
+  TRUST_PROXY: z
+    .string()
+    .default('')
+    .transform((s) => s.split(',').map((v) => v.trim()).filter(Boolean)),
   BODY_LIMIT: z.coerce.number().default(524_288),
 });
 
