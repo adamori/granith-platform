@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const defaultServer = "https://api.granith.dev"
+
 var (
 	flagServer string
 	flagToken  string
@@ -18,7 +20,7 @@ func main() {
 		Short: "Granith secrets SDK CLI",
 	}
 
-	root.PersistentFlags().StringVar(&flagServer, "server", "", "Granith server URL (or GRANITH_SERVER env)")
+	root.PersistentFlags().StringVar(&flagServer, "server", "", "Granith server URL (or GRANITH_SERVER env; defaults to "+defaultServer+")")
 	root.PersistentFlags().StringVar(&flagToken, "token", "", "Granith token (or GRANITH_TOKEN env)")
 
 	root.AddCommand(pingCmd())
@@ -37,7 +39,7 @@ func resolveConfig() (server, rawToken string, err error) {
 		server = os.Getenv("GRANITH_SERVER")
 	}
 	if server == "" {
-		return "", "", fmt.Errorf("server URL required: set --server or GRANITH_SERVER")
+		server = defaultServer
 	}
 
 	rawToken = flagToken
