@@ -15,12 +15,14 @@
 
   const navItems = [
     { key: 'projects', label: 'projects', href: '/projects' },
+    { key: 'notifications', label: 'notifications', href: '/notifications' },
     { key: 'settings', label: 'settings', href: '/settings' },
   ];
 
   const activeKey = $derived.by(() => {
     const path = page.url.pathname;
     if (path.startsWith('/settings')) return 'settings';
+    if (path.startsWith('/notifications')) return 'notifications';
     return 'projects';
   });
 </script>
