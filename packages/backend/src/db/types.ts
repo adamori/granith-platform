@@ -9,6 +9,9 @@ export interface Database {
   secrets: SecretsTable;
   tokens: TokensTable;
   audit_log: AuditLogTable;
+  notification_services: NotificationServicesTable;
+  notification_service_projects: NotificationServiceProjectsTable;
+  notification_deliveries: NotificationDeliveriesTable;
 }
 
 export interface UsersTable {
@@ -112,4 +115,56 @@ export interface AuditLogTable {
   user_agent: string | null;
   metadata: JSONColumnType<Record<string, unknown>> | null;
   ts: ColumnType<Date, string | undefined, string | undefined>;
+}
+
+export type NotificationDriver = 'telegram' | 'pushover';
+export type ThrottleMode = 'cooldown' | 'every' | 'new_source_only';
+export type NotificationState = 'enabled' | 'disabled' | 'probation' | 'permanently_disabled';
+
+export interface NotificationTriggers {
+  bundle_pull: boolean;
+  dashboard_read: boolean;
+  [key: string]: boolean;
+}
+
+export interface NotificationThrottle {
+  mode: ThrottleMode;
+  cooldown_minutes?: number;
+  new_source_window_minutes?: number;
+}
+
+export interface NotificationServicesTable {
+  id: Generated<string>;
+  owner_id: string;
+  driver: NotificationDriver;
+  label: string | null;
+  credential_ct: Buffer;
+  credential_nonce: Buffer;
+  watch_all_projects: ColumnType<boolean, boolean | undefined, boolean>;
+  triggers: JSONColumnType<NotificationTriggers, string | undefined, string>;
+  throttle: JSONColumnType<NotificationThrottle, string | undefined, string>;
+  state: ColumnType<NotificationState, NotificationState | undefined, NotificationState>;
+  consecutive_client_errors: ColumnType<number, number | undefined, number>;
+  last_error: string | null;
+  last_error_at: Date | null;
+  last_sent_at: Date | null;
+  disabled_at: Date | null;
+  disabled_until: Date | null;
+  created_at: ColumnType<Date, string | undefined, string | undefined>;
+  updated_at: ColumnType<Date, string | undefined, string | undefined>;
+}
+
+export interface NotificationServiceProjectsTable {
+  service_id: string;
+  project_id: string;
+}
+
+export interface NotificationDeliveriesTable {
+  id: Generated<string>;
+  service_id: string;
+  project_id: string | null;
+  trigger_type: string;
+  status: 'success' | 'client_error' | 'transient_error';
+  error_message: string | null;
+  created_at: ColumnType<Date, string | undefined, string | undefined>;
 }

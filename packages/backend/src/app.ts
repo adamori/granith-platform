@@ -20,6 +20,8 @@ import { tokenListRoutes } from './routes/tokens/index.js';
 import { tokenByIdRoutes } from './routes/tokens/by-id.js';
 import { bundleRoutes } from './routes/bundle/index.js';
 import { auditRoutes } from './routes/audit/index.js';
+import { notificationListRoutes } from './routes/notifications/index.js';
+import { notificationByIdRoutes } from './routes/notifications/by-id.js';
 import { passwordRoutes } from './routes/auth/password.js';
 import { rotatePDKRoutes } from './routes/projects/rotate-pdk.js';
 import { inviteAdminRoutes } from './routes/admin/invites.js';
@@ -48,6 +50,7 @@ export async function createApp(config: Config) {
         'req.body.finishLoginRequest',
         'req.body.wrapped_pdk',
         'req.body.token_key',
+        'req.body.credential',
       ],
       transport: config.NODE_ENV === 'development'
         ? { target: 'pino-pretty' }
@@ -95,6 +98,8 @@ export async function createApp(config: Config) {
       await protectedApp.register(rotatePDKRoutes, { prefix: '/projects' });
       await protectedApp.register(tokenByIdRoutes);
       await protectedApp.register(auditRoutes, { prefix: '/projects' });
+      await protectedApp.register(notificationListRoutes);
+      await protectedApp.register(notificationByIdRoutes);
     });
 
     // Machine token routes (no session, token-based auth in handler)

@@ -1,6 +1,7 @@
 import { loadConfig } from './config.js';
 import { createApp } from './app.js';
 import { deleteExpiredSessions } from './services/session.js';
+import { sweepReenable, purgeDeliveries } from './services/notify/sweep.js';
 
 async function main() {
   const config = loadConfig();
@@ -13,6 +14,8 @@ async function main() {
         .where('expires_at', '<', new Date())
         .execute();
       await deleteExpiredSessions(app.db);
+      await sweepReenable(app.db);
+      await purgeDeliveries(app.db);
     } catch (err) {
       app.log.error(err, 'Periodic cleanup failed');
     }

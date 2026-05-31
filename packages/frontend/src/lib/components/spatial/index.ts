@@ -5,6 +5,7 @@ export { default as Button } from './Button.svelte';
 export { default as Field } from './Field.svelte';
 export { default as PageHead } from './PageHead.svelte';
 export { default as Empty } from './Empty.svelte';
+export { default as Collapsible } from './Collapsible.svelte';
 export { default as Stage } from './Stage.svelte';
 export { default as LiveTerminal } from './LiveTerminal.svelte';
 export { default as AuthShell } from './AuthShell.svelte';
