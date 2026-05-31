@@ -5,6 +5,7 @@ const envSchema = z.object({
   OPAQUE_SERVER_SETUP: z.string().min(1),
   ADMIN_KEY: z.string().min(32),
   SESSION_SECRET: z.string().min(32),
+  NOTIFY_ENCRYPTION_KEY: z.string().min(32),
   PORT: z.coerce.number().default(3000),
   HOST: z.string().default('0.0.0.0'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),

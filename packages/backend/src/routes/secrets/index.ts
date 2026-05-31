@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { createSecretBody } from '../../schemas/secrets.js';
 import { projectIdParam } from '../../schemas/projects.js';
 import { logAudit } from '../../services/audit.js';
+import { dispatchNotifications } from '../../services/notify/dispatch.js';
 import { NotFoundError } from '../../lib/errors.js';
 
 export async function secretListRoutes(app: FastifyInstance) {
@@ -13,6 +14,14 @@ export async function secretListRoutes(app: FastifyInstance) {
     schema: { params: projectIdParam },
   }, async (request, reply) => {
     await verifyProjectOwnership(db, request.params.id, request.user!.id);
+
+    // Notify services that opted into the dashboard-read trigger (off by default).
+    dispatchNotifications(app, db, {
+      projectId: request.params.id,
+      ownerId: request.user!.id,
+      trigger: 'dashboard_read',
+      sourceKey: request.ip,
+    }).catch((err) => app.log.error(err, 'notification dispatch failed'));
 
     const secrets = await db
       .selectFrom('secrets')

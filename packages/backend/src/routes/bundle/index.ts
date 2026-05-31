@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { hashTokenId } from '../../lib/crypto.js';
 import { assembleBundle } from '../../services/bundle.js';
 import { logAudit } from '../../services/audit.js';
+import { dispatchNotifications } from '../../services/notify/dispatch.js';
 import { UnauthorizedError, ForbiddenError, TooManyRequestsError } from '../../lib/errors.js';
 import { RATE_LIMITS } from '../../lib/constants.js';
 
@@ -48,7 +49,7 @@ export async function bundleRoutes(app: FastifyInstance) {
       .selectFrom('tokens')
       .where('token_id', '=', tokenId)
       .select([
-        'token_id', 'project_id', 'wrapped_pdk', 'wrap_nonce',
+        'token_id', 'project_id', 'owner_id', 'wrapped_pdk', 'wrap_nonce',
         'scopes', 'ip_allowlist', 'expires_at', 'revoked_at',
       ])
       .executeTakeFirst();
@@ -117,6 +118,14 @@ export async function bundleRoutes(app: FastifyInstance) {
       ip: request.ip,
       user_agent: request.headers['user-agent'],
     });
+
+    // Fire notifications asynchronously — never block or fail the secrets delivery.
+    dispatchNotifications(app, db, {
+      projectId: token.project_id,
+      ownerId: token.owner_id,
+      trigger: 'bundle_pull',
+      sourceKey: (token.token_id as Buffer).toString('hex'),
+    }).catch((err) => app.log.error(err, 'notification dispatch failed'));
 
     return reply
       .header('etag', `"${etag}"`)
