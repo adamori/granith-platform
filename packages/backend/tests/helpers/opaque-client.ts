@@ -87,5 +87,7 @@ function extractSessionCookie(setCookieHeader: string | string[]): string {
   const raw = Array.isArray(setCookieHeader) ? setCookieHeader.join('; ') : setCookieHeader;
   const match = raw.match(/session=([^;]+)/);
   if (!match) throw new Error('No session cookie found');
-  return match[1]!;
+  // The session cookie is signed, so its value is URL-encoded in Set-Cookie. Decode it
+  // so that re-injecting via `cookies: { session }` doesn't double-encode the signature.
+  return decodeURIComponent(match[1]!);
 }

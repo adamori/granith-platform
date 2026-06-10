@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { UnauthorizedError } from '../lib/errors.js';
+import { readSessionId } from '../lib/session-cookie.js';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/types.js';
 
@@ -16,7 +17,7 @@ declare module 'fastify' {
 
 export function createSessionAuthHook(db: Kysely<Database>) {
   return async function verifySession(request: FastifyRequest, _reply: FastifyReply) {
-    const sessionId = request.cookies?.['session'];
+    const sessionId = readSessionId(request);
     if (!sessionId) {
       throw new UnauthorizedError('No session');
     }

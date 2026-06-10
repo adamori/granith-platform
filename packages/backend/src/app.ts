@@ -67,7 +67,7 @@ export async function createApp(config: Config) {
   app.decorate('db', db);
   app.decorate('config', config);
 
-  await app.register(cookie);
+  await app.register(cookie, { secret: config.SESSION_SECRET });
   await registerHelmet(app);
   await registerCors(app, config.CORS_ORIGIN);
   await registerRateLimit(app);

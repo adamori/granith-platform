@@ -1,5 +1,7 @@
 import type { FastifyInstance } from 'fastify';
+import { sql } from 'kysely';
 import { hashTokenId } from '../../lib/crypto.js';
+import type { TokenScopes } from '../../db/types.js';
 import { assembleBundle } from '../../services/bundle.js';
 import { logAudit } from '../../services/audit.js';
 import { dispatchNotifications } from '../../services/notify/dispatch.js';
@@ -66,6 +68,11 @@ export async function bundleRoutes(app: FastifyInstance) {
       throw new UnauthorizedError('Token expired');
     }
 
+    const scopes = token.scopes as unknown as TokenScopes;
+    if (!scopes?.read) {
+      throw new ForbiddenError('Token lacks read scope');
+    }
+
     if (token.ip_allowlist && token.ip_allowlist.length > 0) {
       const clientIp = normalizeIp(request.ip);
       const allowed = token.ip_allowlist.some(
@@ -76,9 +83,12 @@ export async function bundleRoutes(app: FastifyInstance) {
       }
     }
 
-    // Update last_used_at async (fire-and-forget)
+    // Update last_used_at and usage counter async (fire-and-forget)
     db.updateTable('tokens')
-      .set({ last_used_at: new Date() })
+      .set({
+        last_used_at: new Date(),
+        usage_counter: sql<number>`coalesce(usage_counter, 0) + 1`,
+      })
       .where('token_id', '=', tokenId)
       .execute()
       .catch(() => {});
