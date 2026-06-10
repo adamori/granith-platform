@@ -49,7 +49,10 @@ export interface SessionsTable {
 
 export interface OpaqueLoginStateTable {
   id: Generated<string>;
-  user_id: string;
+  // Null for login attempts against handles that do not exist — we still create a
+  // state row (using a dummy OPAQUE record) so the response is indistinguishable
+  // from a real account. Such rows can never complete login.
+  user_id: string | null;
   state: Buffer;
   expires_at: Date;
 }

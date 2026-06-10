@@ -39,6 +39,31 @@ alpha, single-maintainer project.
 
 ---
 
+## Remediation status
+
+The following were fixed in the same change set that introduced this report:
+
+- **#1 (Fixed)** — secret update now filters on `owner_id`, matching the delete handler.
+- **#2 (Fixed)** — `login/start` now returns a dummy-record OPAQUE response for unknown
+  handles (state stored with a null `user_id`, migration `013`), so existence is no
+  longer observable; `login/finish` rejects such attempts identically to a wrong password.
+- **#3 (Fixed)** — `/v1/bundle` now rejects tokens without the `read` scope.
+- **#5 (Fixed)** — the session cookie is now signed with `SESSION_SECRET` (the value is
+  now actually used); reads go through `unsignCookie` and reject tampered cookies before
+  any DB lookup. Existing unsigned sessions are invalidated once (one-time re-login).
+- **#7 (Fixed)** — `usage_counter` is incremented atomically on each bundle fetch.
+
+Deliberately **not** changed here:
+
+- **#4** — distributed rate limiting is an infrastructure change deferred until the
+  service runs more than one instance.
+- **#6** — switching the notification-credential KDF would break decryption of
+  already-stored credentials; it needs a re-encryption/migration path and is left as a
+  tracked hardening item.
+- **#8, #9** — backlog cleanup/observability items.
+
+---
+
 ## Findings
 
 ### 1. Missing ownership check on secret update — broken access control (High)

@@ -28,6 +28,7 @@ export async function secretByIdRoutes(app: FastifyInstance) {
       } as any)
       .where('id', '=', sid)
       .where('project_id', '=', projectId)
+      .where('owner_id', '=', request.user!.id)
       .where('deleted_at', 'is', null)
       .returning(['id', 'version', 'updated_at'])
       .executeTakeFirst();
