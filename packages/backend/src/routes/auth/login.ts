@@ -4,6 +4,7 @@ import { loginStartBody, loginFinishBody } from '../../schemas/auth.js';
 import * as opaqueService from '../../services/opaque.js';
 import { createSession } from '../../services/session.js';
 import { logAudit } from '../../services/audit.js';
+import { setSessionCookie } from '../../lib/session-cookie.js';
 import { BadRequestError, UnauthorizedError, TooManyRequestsError } from '../../lib/errors.js';
 import { OPAQUE_LOGIN_STATE_TTL_SECONDS } from '../../lib/constants.js';
 
@@ -49,14 +50,17 @@ export async function loginRoutes(app: FastifyInstance) {
       .select(['id', 'opaque_record'])
       .executeTakeFirst();
 
-    if (!user) {
-      throw new UnauthorizedError('Invalid credentials');
-    }
+    // For unknown handles, fall back to a dummy registration record so the response
+    // is indistinguishable from a real account. The login/finish step will fail the
+    // same way a wrong password does, so account existence is never leaked here.
+    const registrationRecord = user
+      ? (user.opaque_record as Buffer).toString('base64url')
+      : await opaqueService.getDummyRegistrationRecord(config.OPAQUE_SERVER_SETUP);
 
     const { serverLoginState, loginResponse } = opaqueService.startLogin({
       serverSetup: config.OPAQUE_SERVER_SETUP,
       userIdentifier: handle,
-      registrationRecord: (user.opaque_record as Buffer).toString('base64url'),
+      registrationRecord,
       startLoginRequest,
     });
 
@@ -64,7 +68,7 @@ export async function loginRoutes(app: FastifyInstance) {
     const stateRow = await db
       .insertInto('opaque_login_state')
       .values({
-        user_id: user.id,
+        user_id: user?.id ?? null,
         state: Buffer.from(serverLoginState, 'base64'),
         expires_at: expiresAt,
       })
@@ -104,6 +108,12 @@ export async function loginRoutes(app: FastifyInstance) {
       throw new UnauthorizedError('Invalid credentials');
     }
 
+    // Defense in depth: a state row with no user_id belongs to an enumeration-defeating
+    // dummy login. finishLogin should already have thrown above, but never mint a session.
+    if (!stateRow.user_id) {
+      throw new UnauthorizedError('Invalid credentials');
+    }
+
     const sessionId = await createSession(db, stateRow.user_id);
 
     await logAudit(db, {
@@ -114,13 +124,7 @@ export async function loginRoutes(app: FastifyInstance) {
       user_agent: request.headers['user-agent'],
     });
 
-    reply.setCookie('session', sessionId, {
-      httpOnly: true,
-      secure: config.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60,
-    });
+    setSessionCookie(reply, sessionId, config.NODE_ENV === 'production');
 
     return reply.send({ user_id: stateRow.user_id });
   });

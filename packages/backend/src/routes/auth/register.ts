@@ -4,6 +4,7 @@ import { registerStartBody, registerFinishBody } from '../../schemas/auth.js';
 import * as opaqueService from '../../services/opaque.js';
 import { createSession } from '../../services/session.js';
 import { logAudit } from '../../services/audit.js';
+import { setSessionCookie } from '../../lib/session-cookie.js';
 import { AppError, BadRequestError, ConflictError } from '../../lib/errors.js';
 
 export async function registerRoutes(app: FastifyInstance) {
@@ -99,13 +100,7 @@ export async function registerRoutes(app: FastifyInstance) {
       user_agent: request.headers['user-agent'],
     });
 
-    reply.setCookie('session', sessionId, {
-      httpOnly: true,
-      secure: config.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60,
-    });
+    setSessionCookie(reply, sessionId, config.NODE_ENV === 'production');
 
     return reply.status(201).send({ user_id: user.id });
   });
