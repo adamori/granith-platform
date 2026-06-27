@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { deleteSession } from '../../services/session.js';
 import { logAudit } from '../../services/audit.js';
+import { clearSessionCookie, readSessionId } from '../../lib/session-cookie.js';
 import { UnauthorizedError } from '../../lib/errors.js';
 
 export async function sessionRoutes(app: FastifyInstance) {
@@ -8,7 +9,7 @@ export async function sessionRoutes(app: FastifyInstance) {
   const config = app.config;
 
   app.post('/logout', async (request, reply) => {
-    const sessionId = request.cookies?.['session'];
+    const sessionId = readSessionId(request);
     if (sessionId) {
       await deleteSession(db, sessionId);
       if (request.user) {
@@ -21,12 +22,7 @@ export async function sessionRoutes(app: FastifyInstance) {
         });
       }
     }
-    reply.clearCookie('session', {
-      path: '/',
-      httpOnly: true,
-      secure: config.NODE_ENV === 'production',
-      sameSite: 'lax',
-    });
+    clearSessionCookie(reply, config.NODE_ENV === 'production');
     return reply.send({ ok: true });
   });
 
