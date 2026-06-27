@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig, createInviteCode } from '../helpers/setup.js';
 import { registerClient, loginClient } from '../helpers/opaque-client.js';
+import * as opaque from '@serenity-kit/opaque';
 
 describe('Auth', () => {
   beforeAll(async () => { await setupTestApp(); });
@@ -159,14 +160,48 @@ describe('Auth', () => {
       }
     });
 
-    it('rejects unknown handle', async () => {
+    it('does not reveal whether a handle exists at login/start (anti-enumeration)', async () => {
       const app = getApp();
+      // A valid OPAQUE start request against a handle that does not exist must look
+      // exactly like one against a real account: 200 with a login response + id.
+      const { startLoginRequest } = opaque.client.startLogin({ password: 'whatever' });
       const startRes = await app.inject({
         method: 'POST',
         url: '/api/auth/login/start',
-        payload: { handle: 'ghost', startLoginRequest: 'fake' },
+        payload: { handle: 'ghost-does-not-exist', startLoginRequest },
       });
-      expect(startRes.statusCode).toBe(401);
+      expect(startRes.statusCode).toBe(200);
+      const body = startRes.json();
+      expect(body.loginResponse).toBeTruthy();
+      expect(body.login_id).toBeTruthy();
+    });
+
+    it('login/finish fails for an unknown handle', async () => {
+      const app = getApp();
+      const { clientLoginState, startLoginRequest } = opaque.client.startLogin({ password: 'whatever' });
+      const startRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login/start',
+        payload: { handle: 'ghost-also-missing', startLoginRequest },
+      });
+      const { loginResponse, login_id } = startRes.json();
+
+      // The client cannot derive a valid finish against a dummy record; send whatever it
+      // produces (or a placeholder) — the server must reject with 401, same as a wrong password.
+      let finishLoginRequest = 'AAAA';
+      try {
+        const r = opaque.client.finishLogin({ clientLoginState, loginResponse, password: 'whatever' });
+        if (r?.finishLoginRequest) finishLoginRequest = r.finishLoginRequest;
+      } catch {
+        /* client refused — expected for a dummy record */
+      }
+
+      const finishRes = await app.inject({
+        method: 'POST',
+        url: '/api/auth/login/finish',
+        payload: { login_id, finishLoginRequest },
+      });
+      expect(finishRes.statusCode).toBe(401);
     });
   });
 

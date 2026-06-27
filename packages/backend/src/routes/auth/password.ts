@@ -4,6 +4,7 @@ import { z } from 'zod';
 import * as opaqueService from '../../services/opaque.js';
 import { logAudit } from '../../services/audit.js';
 import { deleteAllSessionsExcept } from '../../services/session.js';
+import { readSessionId } from '../../lib/session-cookie.js';
 
 const changePasswordStartBody = z.object({
   registrationRequest: z.string(),
@@ -75,7 +76,7 @@ export async function passwordRoutes(app: FastifyInstance) {
       }
     });
 
-    const currentSessionId = request.cookies?.['session'];
+    const currentSessionId = readSessionId(request) ?? undefined;
     await deleteAllSessionsExcept(db, user.id, currentSessionId);
 
     await logAudit(db, {
