@@ -10,6 +10,8 @@ export interface DeliveryResult {
 export interface NotificationMessage {
   title: string;
   body: string;
+  // Action buttons; not every driver renders all of them, so URLs must also appear in body.
+  actions?: { label: string; url: string }[];
 }
 
 export type CredentialValidation =

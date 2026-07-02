@@ -12,7 +12,7 @@ export async function projectListRoutes(app: FastifyInstance) {
       .selectFrom('projects')
       .where('owner_id', '=', request.user!.id)
       .where('deleted_at', 'is', null)
-      .select(['id', 'name_ct', 'name_nonce', 'wrapped_pdk_for_user', 'wrap_nonce_for_user', 'created_at', 'updated_at'])
+      .select(['id', 'name_ct', 'name_nonce', 'wrapped_pdk_for_user', 'wrap_nonce_for_user', 'created_at', 'updated_at', 'require_approval'])
       .orderBy('created_at', 'desc')
       .execute();
 
@@ -25,6 +25,7 @@ export async function projectListRoutes(app: FastifyInstance) {
         wrap_nonce_for_user: (p.wrap_nonce_for_user as Buffer).toString('base64'),
         created_at: p.created_at,
         updated_at: p.updated_at,
+        require_approval: p.require_approval,
       })),
     });
   });

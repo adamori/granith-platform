@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely';
 import type { Database, NotificationThrottle, NotificationTriggers } from '../../db/types.js';
 import { openCredential } from '../../lib/notify-crypto.js';
 import { getDriver } from './registry.js';
+import type { NotificationMessage } from './types.js';
 import {
   NOTIFY_CLIENT_ERROR_DISABLE_THRESHOLD,
   NOTIFY_AUTO_REENABLE_HOURS,
@@ -10,11 +11,51 @@ import {
   NOTIFY_DEFAULT_NEW_SOURCE_WINDOW_MINUTES,
 } from '../../lib/constants.js';
 
+export interface ApprovalRequestData {
+  requestId: string;
+  approveUrl: string;
+  denyUrl: string;
+  requesterIp?: string;
+  requesterUa?: string;
+  expiresAt: Date;
+}
+
 export interface DispatchParams {
   projectId: string;
   ownerId: string; // owner of the project (so watch_all_projects services match)
   trigger: keyof NotificationTriggers & string;
   sourceKey: string; // token id hex or client ip — used for new_source_only throttle, never stored
+  data?: ApprovalRequestData; // required when trigger === 'approval_request'
+}
+
+// Bypass opt-in and throttle — a suppressed approval_request locks the requester out.
+const CRITICAL_TRIGGERS: ReadonlySet<string> = new Set(['approval_request']);
+
+function buildMessage(trigger: string, now: number, data?: ApprovalRequestData): NotificationMessage {
+  if (trigger === 'approval_request' && data) {
+    const minutesLeft = Math.max(1, Math.round((data.expiresAt.getTime() - now) / 60_000));
+    return {
+      title: 'Granith: approval required',
+      body: [
+        'A bundle fetch is waiting for your approval.',
+        '',
+        `From IP: ${data.requesterIp ?? 'unknown'}`,
+        `Client: ${data.requesterUa ?? 'unknown'}`,
+        `Auto-denies in ~${minutesLeft} min (${data.expiresAt.toISOString()})`,
+        '',
+        `Approve: ${data.approveUrl}`,
+        `Deny: ${data.denyUrl}`,
+      ].join('\n'),
+      actions: [
+        { label: 'Approve', url: data.approveUrl },
+        { label: 'Deny', url: data.denyUrl },
+      ],
+    };
+  }
+  return {
+    title: 'Granith: secrets fetched',
+    body: `A secrets fetch was triggered (${trigger}) at ${new Date(now).toISOString()}.`,
+  };
 }
 
 // Ephemeral, process-local memory of recently-seen sources per service for the
@@ -93,18 +134,18 @@ export async function dispatchNotifications(
   if (services.length === 0) return;
 
   const now = Date.now();
-  const message = {
-    title: 'Granith: secrets fetched',
-    body: `A secrets fetch was triggered (${trigger}) at ${new Date(now).toISOString()}.`,
-  };
+  const message = buildMessage(trigger, now, params.data);
+  const critical = CRITICAL_TRIGGERS.has(trigger);
 
   await Promise.allSettled(
     services.map(async (s) => {
-      const triggers = s.triggers as unknown as NotificationTriggers;
-      if (triggers[trigger] !== true) return;
+      if (!critical) {
+        const triggers = s.triggers as unknown as NotificationTriggers;
+        if (triggers[trigger] !== true) return;
 
-      const throttle = s.throttle as unknown as NotificationThrottle;
-      if (!passesThrottle(s.id, throttle, s.last_sent_at, sourceKey, now)) return;
+        const throttle = s.throttle as unknown as NotificationThrottle;
+        if (!passesThrottle(s.id, throttle, s.last_sent_at, sourceKey, now)) return;
+      }
 
       const driver = getDriver(s.driver);
       if (!driver) {

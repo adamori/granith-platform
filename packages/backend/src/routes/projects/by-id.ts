@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { projectIdParam } from '../../schemas/projects.js';
+import { projectIdParam, updateProjectBody } from '../../schemas/projects.js';
 import { logAudit } from '../../services/audit.js';
 import { NotFoundError } from '../../lib/errors.js';
 
@@ -16,7 +16,7 @@ export async function projectByIdRoutes(app: FastifyInstance) {
       .where('id', '=', request.params.id)
       .where('owner_id', '=', request.user!.id)
       .where('deleted_at', 'is', null)
-      .select(['id', 'name_ct', 'name_nonce', 'wrapped_pdk_for_user', 'wrap_nonce_for_user', 'created_at', 'updated_at'])
+      .select(['id', 'name_ct', 'name_nonce', 'wrapped_pdk_for_user', 'wrap_nonce_for_user', 'created_at', 'updated_at', 'require_approval'])
       .executeTakeFirst();
 
     if (!project) {
@@ -31,7 +31,37 @@ export async function projectByIdRoutes(app: FastifyInstance) {
       wrap_nonce_for_user: (project.wrap_nonce_for_user as Buffer).toString('base64'),
       created_at: project.created_at,
       updated_at: project.updated_at,
+      require_approval: project.require_approval,
     });
+  });
+
+  f.patch('/:id', {
+    schema: { params: projectIdParam, body: updateProjectBody },
+  }, async (request, reply) => {
+    const result = await db
+      .updateTable('projects')
+      .set({ require_approval: request.body.require_approval, updated_at: new Date().toISOString() })
+      .where('id', '=', request.params.id)
+      .where('owner_id', '=', request.user!.id)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+
+    if (result.numUpdatedRows === 0n) {
+      throw new NotFoundError('Project not found');
+    }
+
+    await logAudit(db, {
+      actor_type: 'user',
+      actor_id: request.user!.id,
+      project_id: request.params.id,
+      action: 'project.update',
+      resource_id: request.params.id,
+      ip: request.ip,
+      user_agent: request.headers['user-agent'],
+      metadata: { require_approval: request.body.require_approval },
+    });
+
+    return reply.send({ id: request.params.id, require_approval: request.body.require_approval });
   });
 
   f.delete('/:id', {

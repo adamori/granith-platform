@@ -38,6 +38,12 @@ export class ConflictError extends AppError {
   }
 }
 
+export class GoneError extends AppError {
+  constructor(message = 'Gone') {
+    super(410, message, 'GONE');
+  }
+}
+
 export class TooManyRequestsError extends AppError {
   constructor(message = 'Too many requests') {
     super(429, message, 'TOO_MANY_REQUESTS');

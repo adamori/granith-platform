@@ -113,6 +113,7 @@
 <PageHead back="projects" backHref="/projects" title={project?.name ?? '…'}>
   {#snippet actions()}
     <Button variant="link" href="/projects/{projectId}/audit">audit</Button>
+    <Button variant="link" href="/projects/{projectId}/approvals">approvals</Button>
     <Button variant="bordered" href="/projects/{projectId}/tokens">tokens</Button>
     <Button variant="danger" onclick={handleRotatePDK} disabled={rotating}>
       {rotating ? 'rotating…' : 'rotate keys'}

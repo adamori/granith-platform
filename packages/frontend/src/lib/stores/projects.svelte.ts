@@ -10,6 +10,7 @@ export interface DecryptedProject {
   pdk: Uint8Array;
   createdAt: string;
   updatedAt: string;
+  requireApproval: boolean;
 }
 
 let projects = $state<DecryptedProject[]>([]);
@@ -42,11 +43,16 @@ export async function createProject(name: string): Promise<string> {
   });
 
   projects = [
-    { id: result.id, name, pdk, createdAt: result.created_at, updatedAt: result.created_at },
+    { id: result.id, name, pdk, createdAt: result.created_at, updatedAt: result.created_at, requireApproval: false },
     ...projects,
   ];
 
   return result.id;
+}
+
+export async function setRequireApproval(id: string, value: boolean) {
+  await projectsApi.setRequireApproval(id, value);
+  projects = projects.map((p) => (p.id === id ? { ...p, requireApproval: value } : p));
 }
 
 export async function deleteProject(id: string) {
@@ -65,5 +71,5 @@ function decryptProject(raw: ProjectResponse, kek: Uint8Array): DecryptedProject
   const nameCt = s.fromBase64Standard(raw.name_ct);
   const nameNonce = s.fromBase64Standard(raw.name_nonce);
   const name = keys.decryptProjectName(nameCt, nameNonce, pdk);
-  return { id: raw.id, name, pdk, createdAt: raw.created_at, updatedAt: raw.updated_at };
+  return { id: raw.id, name, pdk, createdAt: raw.created_at, updatedAt: raw.updated_at, requireApproval: raw.require_approval };
 }

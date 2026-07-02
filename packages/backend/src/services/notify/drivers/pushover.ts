@@ -28,6 +28,12 @@ export const pushoverDriver: NotificationDriver = {
       form.set('user', cred.user_key ?? '');
       form.set('title', msg.title);
       form.set('message', msg.body);
+      const primary = msg.actions?.[0];
+      if (primary) {
+        // Pushover supports a single supplementary URL; other actions live in the body.
+        form.set('url', primary.url);
+        form.set('url_title', primary.label);
+      }
       const res = await fetch('https://api.pushover.net/1/messages.json', {
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },

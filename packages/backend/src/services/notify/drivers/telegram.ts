@@ -30,6 +30,15 @@ export const telegramDriver: NotificationDriver = {
           chat_id: cred.chat_id,
           text: `${msg.title}\n\n${msg.body}`,
           disable_notification: false,
+          ...(msg.actions?.length
+            ? {
+                // never preview/prefetch decision links
+                link_preview_options: { is_disabled: true },
+                reply_markup: {
+                  inline_keyboard: [msg.actions.map((a) => ({ text: a.label, url: a.url }))],
+                },
+              }
+            : {}),
         }),
         signal: controller.signal,
       });

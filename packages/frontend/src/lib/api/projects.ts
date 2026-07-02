@@ -8,6 +8,7 @@ export interface ProjectResponse {
   wrap_nonce_for_user: string;
   created_at: string;
   updated_at: string;
+  require_approval: boolean;
 }
 
 export function listProjects() {
@@ -29,6 +30,10 @@ export function createProject(body: {
 
 export function deleteProject(id: string) {
   return api.del(`/projects/${id}`);
+}
+
+export function setRequireApproval(id: string, require_approval: boolean) {
+  return api.patch<{ id: string; require_approval: boolean }>(`/projects/${id}`, { require_approval });
 }
 
 export function rotatePDK(projectId: string, body: {

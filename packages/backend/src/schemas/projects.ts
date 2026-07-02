@@ -10,3 +10,7 @@ export const createProjectBody = z.object({
 export const projectIdParam = z.object({
   id: z.string().uuid(),
 });
+
+export const updateProjectBody = z.object({
+  require_approval: z.boolean(),
+});
