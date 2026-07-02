@@ -14,7 +14,9 @@ import (
 )
 
 func runCmd() *cobra.Command {
-	return &cobra.Command{
+	var noWait bool
+
+	cmd := &cobra.Command{
 		Use:   "run [--] command [args...]",
 		Short: "Fetch secrets and exec a command with them as env vars",
 		Args:  cobra.MinimumNArgs(1),
@@ -31,7 +33,7 @@ func runCmd() *cobra.Command {
 			defer tok.Zero()
 
 			c := client.New(server, rawToken)
-			resp, err := c.FetchBundle()
+			resp, err := fetchBundle(c, noWait)
 			if err != nil {
 				return fmt.Errorf("fetch bundle: %w", err)
 			}
@@ -56,4 +58,7 @@ func runCmd() *cobra.Command {
 			return syscall.Exec(binary, args, env)
 		},
 	}
+
+	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Fail immediately instead of waiting for owner approval")
+	return cmd
 }

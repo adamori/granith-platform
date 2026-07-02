@@ -4,6 +4,7 @@ const triggersSchema = z
   .object({
     bundle_pull: z.boolean(),
     dashboard_read: z.boolean(),
+    approval_request: z.boolean().optional(),
   })
   .catchall(z.boolean());
 

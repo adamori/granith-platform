@@ -2,11 +2,22 @@ package client
 
 import (
 	"crypto/tls"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"runtime"
+	"strconv"
 	"time"
+)
+
+var (
+	ErrAccessDenied     = errors.New("access denied by project owner")
+	ErrAccessExpired    = errors.New("approval request expired")
+	ErrAlreadyDelivered = errors.New("approval already used for a delivery")
+	ErrApprovalTimeout  = errors.New("timed out waiting for owner approval")
+	ErrApprovalRequired = errors.New("project requires owner approval for bundle access")
 )
 
 type Client struct {
@@ -54,9 +65,13 @@ type BundleResponse struct {
 	Body       []byte
 	ETag       string
 	StatusCode int
+	// Set on 202 (approval pending):
+	RequestID  string
+	RetryAfter time.Duration
+	ExpiresAt  time.Time
 }
 
-func (c *Client) FetchBundle() (*BundleResponse, error) {
+func (c *Client) doFetch(requestID string) (*BundleResponse, error) {
 	req, err := http.NewRequest("GET", c.baseURL+"/api/v1/bundle", nil)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
@@ -65,6 +80,9 @@ func (c *Client) FetchBundle() (*BundleResponse, error) {
 	if c.etag != "" {
 		req.Header.Set("If-None-Match", c.etag)
 	}
+	if requestID != "" {
+		req.Header.Set("X-Granith-Approval-Request", requestID)
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -72,23 +90,115 @@ func (c *Client) FetchBundle() (*BundleResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusNotModified {
+	switch resp.StatusCode {
+	case http.StatusOK:
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("read body: %w", err)
+		}
+		etag := resp.Header.Get("ETag")
+		c.etag = etag
+		return &BundleResponse{Body: body, ETag: etag, StatusCode: 200}, nil
+
+	case http.StatusNotModified:
 		return &BundleResponse{StatusCode: 304, ETag: c.etag}, nil
-	}
-	if resp.StatusCode != http.StatusOK {
+
+	case http.StatusAccepted:
+		out := &BundleResponse{
+			StatusCode: 202,
+			RequestID:  resp.Header.Get("X-Granith-Approval-Request"),
+			RetryAfter: 5 * time.Second,
+		}
+		if s := resp.Header.Get("Retry-After"); s != "" {
+			if n, err := strconv.Atoi(s); err == nil && n > 0 {
+				out.RetryAfter = time.Duration(n) * time.Second
+			}
+		}
+		var pending struct {
+			RequestID string    `json:"request_id"`
+			ExpiresAt time.Time `json:"expires_at"`
+		}
+		if body, err := io.ReadAll(resp.Body); err == nil {
+			if json.Unmarshal(body, &pending) == nil {
+				if out.RequestID == "" {
+					out.RequestID = pending.RequestID
+				}
+				out.ExpiresAt = pending.ExpiresAt
+			}
+		}
+		if out.RequestID == "" {
+			return nil, fmt.Errorf("server sent 202 without an approval request id")
+		}
+		return out, nil
+
+	case http.StatusForbidden:
+		if requestID != "" {
+			return nil, ErrAccessDenied
+		}
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("bundle request failed: %d %s", resp.StatusCode, string(body))
+
+	case http.StatusGone:
+		return nil, ErrAccessExpired
+
+	case http.StatusConflict:
+		return nil, ErrAlreadyDelivered
+
+	default:
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("bundle request failed: %d %s", resp.StatusCode, string(body))
 	}
+}
 
-	body, err := io.ReadAll(resp.Body)
+// FetchBundle fails fast with ErrApprovalRequired when the project gates access;
+// use FetchBundleAwaitingApproval to wait for the owner's decision.
+func (c *Client) FetchBundle() (*BundleResponse, error) {
+	resp, err := c.doFetch("")
 	if err != nil {
-		return nil, fmt.Errorf("read body: %w", err)
+		return nil, err
+	}
+	if resp.StatusCode == http.StatusAccepted {
+		return nil, ErrApprovalRequired
+	}
+	return resp, nil
+}
+
+type StatusFunc func(msg string)
+
+// FetchBundleAwaitingApproval polls the same approval request until the owner
+// decides. The deadline tracks the server-side expiry so the authoritative
+// denied/expired outcome is surfaced rather than a local timeout.
+func (c *Client) FetchBundleAwaitingApproval(status StatusFunc) (*BundleResponse, error) {
+	resp, err := c.doFetch("")
+	if err != nil || resp.StatusCode != http.StatusAccepted {
+		return resp, err
 	}
 
-	etag := resp.Header.Get("ETag")
-	c.etag = etag
+	if status != nil {
+		status("waiting for owner approval (request " + resp.RequestID + ")")
+	}
 
-	return &BundleResponse{Body: body, ETag: etag, StatusCode: 200}, nil
+	deadline := time.Now().Add(6 * time.Minute)
+	if !resp.ExpiresAt.IsZero() {
+		deadline = resp.ExpiresAt.Add(30 * time.Second)
+	}
+	interval := resp.RetryAfter
+	requestID := resp.RequestID
+
+	for time.Now().Before(deadline) {
+		time.Sleep(interval)
+		next, err := c.doFetch(requestID)
+		if err != nil {
+			return nil, err
+		}
+		if next.StatusCode != http.StatusAccepted {
+			return next, nil
+		}
+		if next.RetryAfter > 0 {
+			interval = next.RetryAfter
+		}
+	}
+	return nil, ErrApprovalTimeout
 }
 
 func (c *Client) Close() {

@@ -19,6 +19,8 @@ import { secretByIdRoutes } from './routes/secrets/by-id.js';
 import { tokenListRoutes } from './routes/tokens/index.js';
 import { tokenByIdRoutes } from './routes/tokens/by-id.js';
 import { bundleRoutes } from './routes/bundle/index.js';
+import { approvalDecisionRoutes } from './routes/approvals/decision.js';
+import { approvalDashboardRoutes } from './routes/approvals/dashboard.js';
 import { auditRoutes } from './routes/audit/index.js';
 import { notificationListRoutes } from './routes/notifications/index.js';
 import { notificationByIdRoutes } from './routes/notifications/by-id.js';
@@ -100,10 +102,14 @@ export async function createApp(config: Config) {
       await protectedApp.register(auditRoutes, { prefix: '/projects' });
       await protectedApp.register(notificationListRoutes);
       await protectedApp.register(notificationByIdRoutes);
+      await protectedApp.register(approvalDashboardRoutes);
     });
 
     // Machine token routes (no session, token-based auth in handler)
     await apiApp.register(bundleRoutes, { prefix: '/v1' });
+
+    // Approve/Deny links from notifications (no session, signed-token auth in handler)
+    await apiApp.register(approvalDecisionRoutes, { prefix: '/approvals' });
 
     // Admin routes
     const adminAuth = createAdminAuthHook(config.ADMIN_KEY);

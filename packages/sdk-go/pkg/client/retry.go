@@ -17,6 +17,7 @@ func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	for attempt := range t.maxRetries {
 		resp, err = t.base.RoundTrip(req)
+		// <500 includes 202 (approval pending) — must pass through, never retry here
 		if err == nil && resp.StatusCode < 500 {
 			return resp, nil
 		}

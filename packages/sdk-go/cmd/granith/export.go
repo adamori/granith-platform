@@ -13,6 +13,7 @@ import (
 
 func exportCmd() *cobra.Command {
 	var format string
+	var noWait bool
 
 	cmd := &cobra.Command{
 		Use:   "export",
@@ -30,7 +31,7 @@ func exportCmd() *cobra.Command {
 			defer tok.Zero()
 
 			c := client.New(server, rawToken)
-			resp, err := c.FetchBundle()
+			resp, err := fetchBundle(c, noWait)
 			if err != nil {
 				return fmt.Errorf("fetch bundle: %w", err)
 			}
@@ -68,6 +69,7 @@ func exportCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&format, "format", "f", "dotenv", "Output format: dotenv, shell, json")
+	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Fail immediately instead of waiting for owner approval")
 	return cmd
 }
 

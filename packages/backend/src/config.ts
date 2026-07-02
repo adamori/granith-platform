@@ -6,6 +6,9 @@ const envSchema = z.object({
   ADMIN_KEY: z.string().min(32),
   SESSION_SECRET: z.string().min(32),
   NOTIFY_ENCRYPTION_KEY: z.string().min(32),
+  // Externally reachable base URL, used to build absolute Approve/Deny links.
+  // Not a secret. Defaults to localhost for dev; set to the public API origin in prod.
+  PUBLIC_API_URL: z.string().url().default('http://localhost:3000'),
   PORT: z.coerce.number().default(3000),
   HOST: z.string().default('0.0.0.0'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),

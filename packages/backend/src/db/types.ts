@@ -12,6 +12,7 @@ export interface Database {
   notification_services: NotificationServicesTable;
   notification_service_projects: NotificationServiceProjectsTable;
   notification_deliveries: NotificationDeliveriesTable;
+  access_requests: AccessRequestsTable;
 }
 
 export interface UsersTable {
@@ -67,6 +68,7 @@ export interface ProjectsTable {
   created_at: ColumnType<Date, string | undefined, string | undefined>;
   updated_at: ColumnType<Date, string | undefined, string | undefined>;
   deleted_at: Date | null;
+  require_approval: ColumnType<boolean, boolean | undefined, boolean>;
 }
 
 export interface SecretsTable {
@@ -127,7 +129,9 @@ export type NotificationState = 'enabled' | 'disabled' | 'probation' | 'permanen
 export interface NotificationTriggers {
   bundle_pull: boolean;
   dashboard_read: boolean;
-  [key: string]: boolean;
+  // Critical trigger — dispatched regardless of this flag; absent in older rows.
+  approval_request?: boolean;
+  [key: string]: boolean | undefined;
 }
 
 export interface NotificationThrottle {
@@ -170,4 +174,23 @@ export interface NotificationDeliveriesTable {
   status: 'success' | 'client_error' | 'transient_error';
   error_message: string | null;
   created_at: ColumnType<Date, string | undefined, string | undefined>;
+}
+
+export type AccessRequestState = 'pending' | 'approved' | 'denied' | 'expired' | 'consumed';
+export type AccessRequestVia = 'link' | 'dashboard' | 'telegram_callback';
+
+export interface AccessRequestsTable {
+  id: Generated<string>;
+  token_id: Buffer;
+  project_id: string;
+  owner_id: string;
+  state: ColumnType<AccessRequestState, AccessRequestState | undefined, AccessRequestState>;
+  link_nonce: Buffer;
+  requester_ip: string | null;
+  requester_user_agent: string | null;
+  decided_at: Date | null;
+  decided_via: AccessRequestVia | null;
+  consumed_at: Date | null;
+  created_at: ColumnType<Date, string | undefined, string | undefined>;
+  expires_at: Date;
 }
