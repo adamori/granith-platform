@@ -18,12 +18,22 @@ packages/
   backend/    Node 24 / Fastify 5 / TypeScript API server
   frontend/   SvelteKit SPA — vault UI (app.granith.dev)
   marketing/  Astro static site (granith.dev)
-  sdk-go/     Go SDK + granith CLI
+  sdk-go/     Go SDK + granith CLI — git submodule → github.com/adamori/granith
 ```
+
+`packages/sdk-go` is a submodule; its source of truth is the standalone [`adamori/granith`](https://github.com/adamori/granith) repo.
 
 ## Local development
 
 Requires Docker, [Bun](https://bun.sh), and Go 1.24+ (only for the SDK/CLI).
+
+Clone with the SDK submodule:
+
+```bash
+git clone --recurse-submodules git@github.com:adamori/granith-platform.git
+# already cloned? pull it in:
+git submodule update --init packages/sdk-go
+```
 
 ```bash
 # 1. Start local Postgres
@@ -54,6 +64,15 @@ go install ./cmd/granith
 ```
 
 The backend `.env.example` documents required variables. `OPAQUE_SERVER_SETUP` must be generated once and kept stable for the lifetime of the database; see `packages/backend/src` for the helper.
+
+### Working on the SDK
+
+Commit and push SDK changes inside `packages/sdk-go` (they land on `adamori/granith`), then bump the pin here:
+
+```bash
+cd packages/sdk-go && git add -A && git commit && git push   # push to granith
+cd ../.. && git add packages/sdk-go && git commit -m "chore: bump sdk-go"
+```
 
 ## Security
 
