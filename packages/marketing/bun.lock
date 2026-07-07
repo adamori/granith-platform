@@ -16,7 +16,6 @@
   },
   "overrides": {
     "esbuild": "0.28.1",
-    "js-yaml": "4.3.0",
   },
   "packages": {
     "@astrojs/compiler": ["@astrojs/compiler@4.0.0", "", {}, "sha512-eouss7G8ygdZqHuke033VMcVw5HTZUu+PXd/h06DGDUg/jt5btPYPqh66ENWw/mU78rBrf/oeC4oqoBwMtDMNA=="],
