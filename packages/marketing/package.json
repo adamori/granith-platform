@@ -10,11 +10,15 @@
     "check": "astro check"
   },
   "dependencies": {
-    "astro": "^5.10.0"
+    "astro": "^6.4.8"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.0",
-    "tailwindcss": "^4.1.0",
-    "typescript": "^5.9.0"
+    "@tailwindcss/vite": "^4.3.2",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "esbuild": "0.28.1",
+    "js-yaml": "4.3.0"
   }
 }
