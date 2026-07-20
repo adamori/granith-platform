@@ -5,6 +5,7 @@
   import { listDeliveries } from '$lib/api/notifications.js';
   import type { NotificationService, NotificationDriver, ThrottleMode, DeliveryEntry } from '$lib/api/notifications.js';
   import { ApiError } from '$lib/api/client.js';
+  import { confirmModal, toast } from '$lib/stores/ui.svelte.js';
   import { Glass, PageHead, Button, Field, Empty, Collapsible } from '$lib/components/spatial';
 
   let loading = $state(true);
@@ -174,12 +175,26 @@
   }
 
   async function handleReenable(s: NotificationService) {
-    await editService(s.id, { state: 'enabled' });
+    try {
+      await editService(s.id, { state: 'enabled' });
+    } catch (e: any) {
+      toast(e.message || 'Could not re-enable service', 'danger');
+    }
   }
 
   async function handleDelete(s: NotificationService) {
-    if (!confirm('Delete this notification service?')) return;
-    await removeService(s.id);
+    const ok = await confirmModal({
+      title: `Delete ${s.label || s.driver}?`,
+      body: 'It stops sending immediately.',
+      confirmLabel: 'delete service',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await removeService(s.id);
+    } catch (e: any) {
+      toast(e.message || 'Could not delete service', 'danger');
+    }
   }
 
   function statusBadge(s: NotificationService): { text: string; tone: 'ok' | 'warn' | 'danger' } {
@@ -228,18 +243,6 @@
   </p>
 </PageHead>
 
-<div style="margin-bottom: 18px;">
-  <Collapsible title="▸ before you add a service — read this">
-    <ul class="sp-mini" style="margin: 0; padding-left: 18px; line-height: 1.6;">
-      <li>Use a token scoped to Granith only. Don't reuse the same Telegram bot or Pushover app token across other apps.</li>
-      <li>
-        These tokens are encrypted <strong>server-side</strong>, not end-to-end like your secrets — Granith can read
-        them at send time. A broadly-scoped token is dangerous if leaked, so create a dedicated bot/app for Granith.
-      </li>
-    </ul>
-  </Collapsible>
-</div>
-
 {#if showForm}
   <Glass depth={0.3} style="padding: 22px; margin-bottom: 18px;">
     <div class="sp-stack--lg">
@@ -278,6 +281,10 @@
           </div>
         </div>
       {/if}
+
+      <p class="sp-mini" style="margin: 0;">
+        Use a dedicated bot/app scoped to Granith only — these credentials are encrypted server-side, not end-to-end.
+      </p>
 
       <div>
         <span class="sp-field__label" style="display: block; margin-bottom: 8px;">Watches</span>
@@ -360,12 +367,12 @@
               {s.label || s.driver}
               <span style="color: var(--sp-text-dim); font-weight: 400;"> · {s.driver}</span>
             </p>
-            <div style="display: flex; gap: 14px; margin-top: 6px; font-size: 11px; color: var(--sp-text-muted); flex-wrap: wrap; font-family: var(--sp-font);">
+            <div style="display: flex; gap: 14px; margin-top: 6px; font-size: 11px; color: var(--sp-text-muted); flex-wrap: wrap; font-family: var(--sp-mono);">
               <span>watches {watchSummary(s)}</span>
               <span>· {triggerSummary(s)}</span>
               <span>· {throttleSummary(s)}</span>
             </div>
-            <div style="margin-top: 8px; font-size: 11px; font-family: var(--sp-font);">
+            <div style="margin-top: 8px; font-size: 11px; font-family: var(--sp-mono);">
               <span style="color: {statusColor[badge.tone]};">● {badge.text}</span>
               {#if s.last_error}
                 <span style="color: var(--sp-text-dim);"> — {s.last_error}</span>
@@ -388,8 +395,7 @@
 <div style="margin-top: 22px;">
   <Collapsible title="▸ recent deliveries (7-day log)">
     <p class="sp-mini" style="margin: 0 0 12px;">
-      Granith keeps 7 days of delivery attempts. No server addresses or internal details are recorded — only what you
-      need to fix your own setup.
+      Delivery attempts from the last 7 days.
     </p>
     {#if deliveries.length === 0}
       <p class="sp-mini">No deliveries logged yet.</p>
@@ -397,7 +403,7 @@
       <div class="sp-stack" style="gap: 6px;">
         {#each deliveries as d (d.id)}
           {@const tone = d.status === 'success' ? 'ok' : d.status === 'client_error' ? 'danger' : 'warn'}
-          <div style="display: flex; gap: 12px; align-items: baseline; font-size: 11px; font-family: var(--sp-font); color: var(--sp-text-muted);">
+          <div style="display: flex; gap: 12px; align-items: baseline; font-size: 11px; font-family: var(--sp-mono); color: var(--sp-text-muted);">
             <span style="color: {statusColor[tone]}; min-width: 90px;">● {d.status.replace('_', ' ')}</span>
             <span style="min-width: 120px;">{projectName(d.project_id)}</span>
             <span style="color: var(--sp-text-dim);">{d.trigger_type}</span>

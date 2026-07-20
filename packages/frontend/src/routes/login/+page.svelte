@@ -29,7 +29,7 @@
 <AuthShell
   eyebrow="§01 · sign in"
   title="Unlock the vault."
-  subtitle="Your password derives the key that unwraps your project keys. The server never sees it."
+  subtitle="Your password unlocks your vault locally — it never leaves this device."
 >
   {#snippet footer()}
     need an account? <a href="/register" style="color: var(--sp-accent);">register →</a>

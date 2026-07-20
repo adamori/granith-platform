@@ -4,7 +4,8 @@
   import { getProjectById, loadProjects } from '$lib/stores/projects.svelte.js';
   import { listAudit } from '$lib/api/audit.js';
   import type { AuditEntry } from '$lib/api/audit.js';
-  import { Glass, PageHead, Label, Button, Empty } from '$lib/components/spatial';
+  import { toast } from '$lib/stores/ui.svelte.js';
+  import { Glass, PageHead, Label, Button, Empty, ProjectTabs } from '$lib/components/spatial';
 
   const projectId = $derived(page.params.id!);
   const project = $derived(getProjectById(projectId));
@@ -35,12 +36,17 @@
 
   async function fetchEntries() {
     loading = true;
-    const params: Record<string, any> = { limit: limit + 1, offset };
-    if (filterAction) params.action = filterAction;
-    const res = await listAudit(projectId, params);
-    hasMore = res.entries.length > limit;
-    entries = res.entries.slice(0, limit);
-    loading = false;
+    try {
+      const params: Record<string, any> = { limit: limit + 1, offset };
+      if (filterAction) params.action = filterAction;
+      const res = await listAudit(projectId, params);
+      hasMore = res.entries.length > limit;
+      entries = res.entries.slice(0, limit);
+    } catch (e: any) {
+      toast(e.message || 'Could not load audit log', 'danger');
+    } finally {
+      loading = false;
+    }
   }
 
   async function handleFilter() {
@@ -65,11 +71,13 @@
   }
 </script>
 
-<PageHead back={project?.name ?? 'Project'} backHref="/projects/{projectId}" title="Audit log">
+<PageHead back="projects" backHref="/projects" title={project?.name ?? '…'}>
   <p class="sp-mini" style="margin-top: 4px;">
     enough to spot a stolen token; not enough to leak which secret your process touched when.
   </p>
 </PageHead>
+
+<ProjectTabs {projectId} />
 
 <Glass depth={0.25} style="padding: 14px; margin-bottom: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
   <Label>filter</Label>
@@ -88,7 +96,11 @@
 {#if loading}
   <p class="sp-mini">Loading…</p>
 {:else if entries.length === 0}
-  <Empty title="No audit entries found." />
+  {#if filterAction}
+    <Empty title="No {filterAction} entries." hint="Try a different action filter." />
+  {:else}
+    <Empty title="No activity yet." hint="Actions on this project will show up here." />
+  {/if}
 {:else}
   <Glass depth={0.15} style="padding: 6px 0;">
     {#each entries as entry (entry.id)}

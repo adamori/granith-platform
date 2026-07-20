@@ -4,6 +4,8 @@
   import Glass from './Glass.svelte';
   import Label from './Label.svelte';
   import SpatialLogo from './SpatialLogo.svelte';
+  import CommandPalette from './CommandPalette.svelte';
+  import { togglePalette } from '$lib/stores/ui.svelte.js';
 
   type Props = {
     handle: string;
@@ -40,6 +42,7 @@
       <a href={n.href} class={activeKey === n.key ? 'is-active' : ''}>{n.label}</a>
     {/each}
     <span class="sp-topbar__divider"></span>
+    <button class="sp-topbar__kbd" type="button" onclick={togglePalette} title="Command palette">⌘K</button>
     <span style="color: var(--sp-text-muted); font-size: 12px;">{handle}</span>
     <button class="sp-topbar__cta" type="button" onclick={onLogout}>log out</button>
   </Glass>
@@ -48,3 +51,5 @@
 <div class="sp-wrap">
   {@render children()}
 </div>
+
+<CommandPalette {onLogout} />

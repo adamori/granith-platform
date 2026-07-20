@@ -8,7 +8,8 @@
   import * as keys from '$lib/crypto/keys.js';
   import * as s from '$lib/crypto/sodium.js';
   import { getKek } from '$lib/stores/auth.svelte.js';
-  import { Glass, PageHead, Button, Field, Empty } from '$lib/components/spatial';
+  import { confirmModal, toast } from '$lib/stores/ui.svelte.js';
+  import { Glass, PageHead, Button, Field, Empty, ProjectTabs } from '$lib/components/spatial';
 
   let loading = $state(true);
   let showAdd = $state(false);
@@ -72,12 +73,32 @@
   }
 
   async function handleDelete(secretId: string, name: string) {
-    if (!confirm(`Delete secret "${name}"?`)) return;
-    await deleteSecret(projectId, secretId);
+    const ok = await confirmModal({
+      title: `Delete "${name}"?`,
+      body: 'The secret and its history are gone for good.',
+      confirmLabel: 'delete secret',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await deleteSecret(projectId, secretId);
+    } catch (e: any) {
+      toast(e.message || 'Could not delete secret', 'danger');
+    }
   }
 
   async function handleRotatePDK() {
-    if (!confirm('Rotate project encryption key?\n\nThis will:\n- Generate a new PDK\n- Re-wrap all secret keys\n- REVOKE ALL TOKENS\n\nRunning services will lose access until new tokens are minted.')) return;
+    const ok = await confirmModal({
+      title: 'Rotate encryption key?',
+      consequences: [
+        'A new project key is generated and every secret is re-wrapped',
+        'All tokens are revoked',
+        'Running services lose access until you mint new tokens',
+      ],
+      confirmLabel: 'rotate & revoke tokens',
+      danger: true,
+    });
+    if (!ok) return;
 
     const kek = getKek();
     if (!kek || !project) return;
@@ -113,6 +134,7 @@
       await loadProjects();
       const p = getProjectById(projectId);
       if (p) await loadSecrets(projectId, p.pdk);
+      toast('Key rotated — all tokens revoked.', 'success');
     } catch (e: any) {
       rotateError = e.message || 'Rotation failed';
     } finally {
@@ -123,18 +145,17 @@
 
 <PageHead back="projects" backHref="/projects" title={project?.name ?? '…'}>
   {#snippet actions()}
-    <Button variant="link" href="/projects/{projectId}/audit">audit</Button>
-    <Button variant="link" href="/projects/{projectId}/approvals">approvals</Button>
-    <Button variant="bordered" href="/projects/{projectId}/tokens">tokens</Button>
     <Button variant="danger" onclick={handleRotatePDK} disabled={rotating}>
       {rotating ? 'rotating…' : 'rotate keys'}
     </Button>
     <Button onclick={() => (showAdd = !showAdd)}>+ add secret</Button>
   {/snippet}
   <p class="sp-mini" style="margin-top: 4px;">
-    {getSecrets().length} secret{getSecrets().length === 1 ? '' : 's'} · wrapped by pdk · 142 bytes / bundle
+    {getSecrets().length} secret{getSecrets().length === 1 ? '' : 's'} · encrypted client-side
   </p>
 </PageHead>
+
+<ProjectTabs {projectId} />
 
 {#if rotateError}
   <p class="sp-alert sp-alert--danger" style="margin-bottom: 18px;">{rotateError}</p>
@@ -157,7 +178,7 @@
 {#if loading}
   <p class="sp-mini">Loading…</p>
 {:else if getSecrets().length === 0}
-  <Empty title="No secrets in this project." hint="Add one with the button above, or via the CLI: granith secret put NAME=value" />
+  <Empty title="No secrets yet." hint="Add one above — or from the CLI: granith secret put NAME=value" />
 {:else}
   <div class="sp-stack">
     {#each getSecrets() as secret, i (secret.id)}

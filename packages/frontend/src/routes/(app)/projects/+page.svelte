@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { loadProjects, getProjects, createProject, deleteProject } from '$lib/stores/projects.svelte.js';
+  import { confirmModal, toast } from '$lib/stores/ui.svelte.js';
   import { Glass, PageHead, Button, Field, Empty } from '$lib/components/spatial';
 
   let loading = $state(true);
@@ -33,8 +34,19 @@
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete project "${name}"? This cannot be undone.`)) return;
-    await deleteProject(id);
+    const ok = await confirmModal({
+      title: `Delete "${name}"?`,
+      body: 'The project, its secrets and its tokens are gone for good.',
+      confirmLabel: 'delete project',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await deleteProject(id);
+      toast(`"${name}" deleted.`, 'success');
+    } catch (e: any) {
+      toast(e.message || 'Could not delete project', 'danger');
+    }
   }
 
 </script>
@@ -44,7 +56,7 @@
     <Button onclick={() => (showCreate = !showCreate)}>+ new project</Button>
   {/snippet}
   <p class="sp-mini" style="margin-top: 4px;">
-    {getProjects().length} project{getProjects().length === 1 ? '' : 's'} · all wrapped with their own PDK
+    {getProjects().length} project{getProjects().length === 1 ? '' : 's'} · each encrypted with its own key
   </p>
 </PageHead>
 

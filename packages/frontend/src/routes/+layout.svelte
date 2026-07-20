@@ -2,7 +2,7 @@
   import '../app.css';
   import { initCrypto } from '$lib/crypto/init.js';
   import { onMount } from 'svelte';
-  import { Stage } from '$lib/components/spatial';
+  import { Stage, ConfirmModal, Toasts } from '$lib/components/spatial';
 
   let { children } = $props();
   let cryptoReady = $state(false);
@@ -25,9 +25,11 @@
     </div>
   {:else if !cryptoReady}
     <div style="min-height: 100vh; display: grid; place-items: center;">
-      <p class="sp-mini">Preparing crypto engine…</p>
+      <p class="sp-mini">Loading…</p>
     </div>
   {:else}
     {@render children()}
   {/if}
+  <ConfirmModal />
+  <Toasts />
 </Stage>

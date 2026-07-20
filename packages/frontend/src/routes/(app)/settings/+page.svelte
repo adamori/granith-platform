@@ -7,7 +7,7 @@
   import * as s from '$lib/crypto/sodium.js';
   import * as keys from '$lib/crypto/keys.js';
   import { getUsage, type UsageResponse } from '$lib/api/usage.js';
-  import { Glass, PageHead, Label, Button, Field } from '$lib/components/spatial';
+  import { Glass, PageHead, Label, Button, Field, Collapsible } from '$lib/components/spatial';
 
   let currentPassword = $state('');
   let newPassword = $state('');
@@ -71,6 +71,13 @@
     changing = true;
     try {
       const salt = new TextEncoder().encode(user.handle.padEnd(16, '\0')).slice(0, 16);
+
+      const { kek: checkKek } = s.deriveKeys(currentPassword, salt);
+      if (checkKek.length !== oldKek.length || !checkKek.every((b, i) => b === oldKek[i])) {
+        error = 'Current password is incorrect';
+        return;
+      }
+
       const { kek: newKek } = s.deriveKeys(newPassword, salt);
 
       const { clientRegistrationState, registrationRequest } = opaqueClient.startRegistration(newPassword);
@@ -116,11 +123,7 @@
 </script>
 
 <div class="sp-wrap--narrow">
-  <PageHead eyebrow="§04 · account" title="Settings">
-    <p class="sp-mini" style="margin-top: 4px;">
-      changing your password re-derives KEK and re-wraps every project key client-side.
-    </p>
-  </PageHead>
+  <PageHead eyebrow="§04 · account" title="Settings" />
 
   <Glass depth={0.3} style="padding: clamp(20px, 3vw, 32px);">
     <Label>§ usage</Label>
@@ -146,11 +149,11 @@
         </div>
         {#if level === 'over'}
           <p class="sp-mini" style="margin-top: 10px; color: var(--sp-danger);">
-            ▸ you're at the fair-use cap. new secrets, projects and tokens are blocked until you free space or request a raise.
+            ▸ storage full — new writes are blocked. free space or request a raise below.
           </p>
         {:else if level === 'warn'}
           <p class="sp-mini" style="margin-top: 10px; color: var(--sp-warm);">
-            ▸ you're close to the fair-use cap. request a raise below whenever you need one.
+            ▸ nearing your storage cap — raises are free.
           </p>
         {/if}
       </div>
@@ -176,13 +179,12 @@
 
       {#if usage.override_active}
         <p class="sp-mini" style="margin-top: 18px; color: var(--sp-success);">
-          ▸ this account has a custom limit — the fair-use cap above was raised for you.
+          ▸ custom limit active — raised for you.
         </p>
       {/if}
 
       <p class="sp-mono" style="margin-top: 18px; font-size: 12px;">
-        Granith is free. The fair-use cap only keeps the server from being used as file storage.
-        Need more? Raises are free — tell us what you're building.
+        Granith is free. Need more space? Raises are free — tell us what you're building.
       </p>
       <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px;">
         <a
@@ -214,18 +216,16 @@
         </Button>
       </div>
     </form>
+    <div style="margin-top: 18px;">
+      <Collapsible title="▸ how it works">
+        <ol class="sp-mini" style="margin: 0; padding-left: 18px; line-height: 1.8;">
+          <li>Your old password unlocks your project keys in this tab.</li>
+          <li>Your new password locks them again.</li>
+          <li>Only the re-encrypted keys are uploaded — plaintext never leaves.</li>
+        </ol>
+      </Collapsible>
+    </div>
   </Glass>
-
-  <div style="margin-top: 28px;">
-    <Glass depth={0.2} deep style="padding: 20px 24px;">
-      <Label>§ what happens</Label>
-      <ol class="sp-mono" style="margin: 14px 0 0; padding-left: 20px; line-height: 1.85;">
-        <li>old password derives current KEK · all project keys decrypted in-memory</li>
-        <li>new password derives new KEK · same project keys re-wrapped</li>
-        <li>only the new wrapped blob is sent to the server. plaintext never leaves.</li>
-      </ol>
-    </Glass>
-  </div>
 </div>
 
 <style>

@@ -44,7 +44,7 @@
       <Glass depth={0.4} deep style="padding: 16px 20px; margin-top: 18px;">
         <Label>§ what crosses the wire</Label>
         <p class="sp-mono" style="margin: 12px 0 0; font-size: 12px; line-height: 1.7;">
-          Server returned bytes; it never held a key that could read them. Plaintext exists only inside the running application.
+          Only ciphertext. Decryption happens in your running app — the server never holds a key.
         </p>
       </Glass>
     </div>

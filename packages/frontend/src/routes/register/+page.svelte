@@ -40,7 +40,7 @@
 <AuthShell
   eyebrow="§01 · create account"
   title="Create an account"
-  subtitle="Pick a handle and a strong passphrase. Both live in your head — never on our server."
+  subtitle="Pick a handle and a strong password. It never leaves this device."
 >
   {#snippet footer()}
     already registered? <a href="/login" style="color: var(--sp-accent);">log in →</a>

@@ -4,7 +4,8 @@
   import { getProjectById, loadProjects, setRequireApproval } from '$lib/stores/projects.svelte.js';
   import { listAccessRequests, approveAccessRequest, denyAccessRequest } from '$lib/api/approvals.js';
   import type { AccessRequestResponse } from '$lib/api/approvals.js';
-  import { Glass, PageHead, Button, Empty } from '$lib/components/spatial';
+  import { toast } from '$lib/stores/ui.svelte.js';
+  import { Glass, PageHead, Button, Empty, ProjectTabs } from '$lib/components/spatial';
 
   const projectId = $derived(page.params.id!);
   const project = $derived(getProjectById(projectId));
@@ -26,7 +27,11 @@
   onMount(() => {
     (async () => {
       if (!project) await loadProjects();
-      await refresh();
+      try {
+        await refresh();
+      } catch (e: any) {
+        toast(e.message || 'Could not load access requests', 'danger');
+      }
       loading = false;
     })();
     const timer = setInterval(() => refresh().catch(() => {}), 10_000);
@@ -65,11 +70,13 @@
   }
 </script>
 
-<PageHead back={project?.name ?? 'Project'} backHref="/projects/{projectId}" title="Approvals">
+<PageHead back="projects" backHref="/projects" title={project?.name ?? '…'}>
   <p class="sp-mini" style="margin-top: 4px;">
-    {pending.length} pending · every bundle fetch needs your approval when enabled
+    {pending.length} pending
   </p>
 </PageHead>
+
+<ProjectTabs {projectId} />
 
 {#if error}
   <p class="sp-alert sp-alert--danger" style="margin-bottom: 18px;">{error}</p>
@@ -81,7 +88,7 @@
       <p style="margin: 0;">Require approval for bundle access</p>
       <p class="sp-mini" style="margin: 6px 0 0;">
         {project?.requireApproval
-          ? 'ON — every fetch waits for you (Telegram/Pushover link or this page) and auto-denies after 5 minutes.'
+          ? 'ON — every fetch waits for your approval and auto-denies after 5 minutes.'
           : 'OFF — tokens fetch the bundle directly.'}
       </p>
     </div>
@@ -95,7 +102,7 @@
   <p class="sp-mini">Loading…</p>
 {:else}
   {#if pending.length === 0}
-    <Empty title="No pending access requests." hint="When a token fetches the bundle with approval enabled, it shows up here." />
+    <Empty title="Nothing waiting." hint="Fetches that need your approval show up here." />
   {:else}
     <div class="sp-stack" style="margin-bottom: 24px;">
       {#each pending as req, i (req.id)}

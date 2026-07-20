@@ -10,3 +10,7 @@ export { default as Stage } from './Stage.svelte';
 export { default as LiveTerminal } from './LiveTerminal.svelte';
 export { default as AuthShell } from './AuthShell.svelte';
 export { default as AppShell } from './AppShell.svelte';
+export { default as ConfirmModal } from './ConfirmModal.svelte';
+export { default as Toasts } from './Toasts.svelte';
+export { default as ProjectTabs } from './ProjectTabs.svelte';
+export { default as CommandPalette } from './CommandPalette.svelte';

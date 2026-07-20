@@ -57,7 +57,7 @@
   <AuthShell
     eyebrow="§01 · session active"
     title="Unlock vault."
-    subtitle="Session is alive — enter your password to re-derive the KEK and unwrap project keys in memory."
+    subtitle="Enter your password to unlock your projects."
   >
     <form onsubmit={handleUnlock} style="display: flex; flex-direction: column; gap: 14px;">
       <Field id="unlock-pw" label="Password" type="password" bind:value={password} autocomplete="current-password" required />

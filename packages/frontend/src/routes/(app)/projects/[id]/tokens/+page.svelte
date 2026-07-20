@@ -7,7 +7,8 @@
   import { generateTokenPair, wrapPDKForToken } from '$lib/crypto/keys.js';
   import { createHashAsync } from '$lib/crypto/hash.js';
   import { toBase64Standard, toHex } from '$lib/crypto/sodium.js';
-  import { Glass, PageHead, Button, Field, Empty } from '$lib/components/spatial';
+  import { confirmModal, toast } from '$lib/stores/ui.svelte.js';
+  import { Glass, PageHead, Button, Field, Empty, ProjectTabs } from '$lib/components/spatial';
 
   const projectId = $derived(page.params.id!);
   const project = $derived(getProjectById(projectId));
@@ -76,10 +77,20 @@
   }
 
   async function handleRevoke(tokenId: string) {
-    if (!confirm('Revoke this token? Running services will lose access.')) return;
-    await revokeToken(tokenId);
-    const res = await listTokens(projectId);
-    tokens = res.tokens;
+    const ok = await confirmModal({
+      title: 'Revoke this token?',
+      body: 'Services using it lose access immediately.',
+      confirmLabel: 'revoke',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await revokeToken(tokenId);
+      const res = await listTokens(projectId);
+      tokens = res.tokens;
+    } catch (e: any) {
+      toast(e.message || 'Could not revoke token', 'danger');
+    }
   }
 
   function startEditAllowlist(token: TokenResponse) {
@@ -109,24 +120,26 @@
   const liveCount = $derived(tokens.filter((t) => !t.revoked_at).length);
 </script>
 
-<PageHead back={project?.name ?? 'Project'} backHref="/projects/{projectId}" title="Tokens">
+<PageHead back="projects" backHref="/projects" title={project?.name ?? '…'}>
   {#snippet actions()}
     <Button onclick={() => (showMint = !showMint)}>+ mint token</Button>
   {/snippet}
   <p class="sp-mini" style="margin-top: 4px;">
-    {liveCount} live · {tokens.length - liveCount} revoked · each token authorizes bundle.fetch on this project
+    {liveCount} live · {tokens.length - liveCount} revoked
   </p>
 </PageHead>
 
+<ProjectTabs {projectId} />
+
 {#if mintedToken}
   <div class="sp-reveal sp-parallax" style="--depth: 0.4; margin-bottom: 18px;">
-    <p class="sp-reveal__title">▸ token minted — copy it now. you won't see it again.</p>
+    <p class="sp-reveal__title">▸ token minted — copy it now. it won't be shown again.</p>
     <div class="sp-reveal__value">{mintedToken}</div>
     <div class="sp-reveal__row">
       <Button variant="primary" onclick={handleCopy}>{copied ? 'copied' : 'copy'}</Button>
       <Button variant="link" onclick={dismissToken}>dismiss</Button>
     </div>
-    <p class="sp-reveal__hint">hint: your clipboard will NOT auto-clear. clear it manually within 10 minutes.</p>
+    <p class="sp-reveal__hint">clipboard doesn't auto-clear — clear it after pasting.</p>
   </div>
 {/if}
 
@@ -140,9 +153,6 @@
       <Button variant="link" onclick={() => { showMint = false; mintError = ''; }}>cancel</Button>
     </div>
     {#if mintError}<p class="sp-alert sp-alert--danger" style="margin-top: 14px;">{mintError}</p>{/if}
-    <p class="sp-mini" style="margin-top: 14px;">
-      tokens expire after the ttl, or until you revoke them — whichever first.
-    </p>
   </Glass>
 {/if}
 
@@ -159,10 +169,10 @@
       >
         <div style="display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
           <div style="flex: 1; min-width: 0;">
-            <p style="margin: 0; font: 500 13px var(--sp-font); color: var(--sp-text); letter-spacing: -0.01em;">
+            <p style="margin: 0; font: 500 13px var(--sp-mono); color: var(--sp-text); letter-spacing: -0.01em;">
               {token.token_id.slice(0, 16)}…
             </p>
-            <div style="display: flex; gap: 14px; margin-top: 6px; font-size: 11px; color: var(--sp-text-muted); flex-wrap: wrap; font-family: var(--sp-font);">
+            <div style="display: flex; gap: 14px; margin-top: 6px; font-size: 11px; color: var(--sp-text-muted); flex-wrap: wrap; font-family: var(--sp-mono);">
               <span>expires {new Date(token.expires_at).toLocaleDateString()}</span>
               {#if token.last_used_at}
                 <span>used {new Date(token.last_used_at).toLocaleDateString()}</span>
@@ -188,12 +198,13 @@
           <div style="border-top: 1px solid var(--sp-glass-border); padding-top: 14px; margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
             <Field
               id="al-{token.token_id}"
-              label="IP allowlist (CIDR, comma or newline separated, empty = unrestricted)"
+              label="IP allowlist"
               type="textarea"
               bind:value={allowlistInput}
-              placeholder="192.168.1.0/24, 10.0.0.1/32"
+              placeholder="10.0.0.0/8, 192.168.1.0/24"
               rows={2}
             />
+            <p class="sp-mini" style="margin: 0;">CIDR ranges, comma or newline separated. Empty = any IP.</p>
             {#if allowlistError}<p class="sp-alert sp-alert--danger">{allowlistError}</p>{/if}
             <div style="display: flex; gap: 8px;">
               <Button onclick={saveAllowlist} disabled={savingAllowlist}>{savingAllowlist ? 'saving…' : 'save'}</Button>
