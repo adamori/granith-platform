@@ -4,6 +4,7 @@ import { createNotificationBody, deliveriesQuery } from '../../schemas/notificat
 import { logAudit } from '../../services/audit.js';
 import { getDriver } from '../../services/notify/registry.js';
 import { sealCredential } from '../../lib/notify-crypto.js';
+import { assertStorageAvailable } from '../../services/limits.js';
 import { NOTIFY_MAX_SERVICES_PER_USER } from '../../lib/constants.js';
 import { BadRequestError, ConflictError } from '../../lib/errors.js';
 import { assertOwnsProjects } from './ownership.js';
@@ -77,6 +78,8 @@ export async function notificationListRoutes(app: FastifyInstance) {
     await assertOwnsProjects(db, projectIds, userId);
 
     const sealed = sealCredential(JSON.stringify(validation.normalized), app.config.NOTIFY_ENCRYPTION_KEY);
+
+    await assertStorageAvailable(db, userId, sealed.ct.length + sealed.nonce.length);
 
     const id = await db.transaction().execute(async (trx) => {
       const inserted = await trx

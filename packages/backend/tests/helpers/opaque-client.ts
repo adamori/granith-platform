@@ -5,9 +5,8 @@ export async function registerClient(params: {
   password: string;
   serverSetup: string;
   app: any;
-  inviteCode: string;
 }): Promise<{ userId: string; sessionCookie: string }> {
-  const { handle, password, serverSetup, app, inviteCode } = params;
+  const { handle, password, serverSetup, app } = params;
 
   const { clientRegistrationState, registrationRequest } =
     opaque.client.startRegistration({ password });
@@ -31,7 +30,6 @@ export async function registerClient(params: {
     payload: {
       handle,
       registrationRecord,
-      invite_code: inviteCode,
       kdf_params: {
         algorithm: 'argon2id',
         time_cost: 1,

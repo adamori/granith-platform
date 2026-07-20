@@ -34,6 +34,13 @@ export async function setupTestApp() {
   return app;
 }
 
+// App with config overrides; caller must close it. Shares the test database.
+export async function buildTestApp(overrides: Partial<Config> = {}): Promise<FastifyInstance> {
+  const instance = await createApp({ ...TEST_CONFIG, ...overrides });
+  await instance.ready();
+  return instance;
+}
+
 export async function teardownTestApp() {
   if (app) {
     await app.close();
@@ -49,19 +56,6 @@ export async function truncateAll() {
   await db.deleteFrom('projects').execute();
   await db.deleteFrom('opaque_login_state').execute();
   await db.deleteFrom('sessions').execute();
-  await db.deleteFrom('invite_codes').execute();
+  await db.deleteFrom('notification_services').execute();
   await db.deleteFrom('users').execute();
-}
-
-export async function createInviteCode(code = 'test-invite'): Promise<string> {
-  const db = app.db;
-  await db
-    .insertInto('invite_codes')
-    .values({
-      code,
-      created_by: null,
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    })
-    .execute();
-  return code;
 }

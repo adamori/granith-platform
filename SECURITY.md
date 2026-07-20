@@ -19,15 +19,15 @@ Please do not open public issues for security reports.
 
 ## Response expectations
 
-Granith is currently maintained by a single person in alpha. Expect:
+Granith is v1.0 (generally available) but is still maintained by a single person. Expect:
 
 - Acknowledgement within 7 days.
-- No formal SLA for fixes while in alpha.
+- No formal SLA for fixes — this is a single-maintainer project, best-effort.
 - Public credit in the release notes once the fix ships, unless you ask otherwise.
 
 ## Supported versions
 
-Only `main` is supported. No patch backports are issued while the project is in alpha.
+Only `main` (the deployed v1.0 line) is supported. Fixes land on `main`; no patch backports are issued.
 
 ## Out of scope
 

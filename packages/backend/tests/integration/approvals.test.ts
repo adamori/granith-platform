@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig, createInviteCode } from '../helpers/setup.js';
+import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig } from '../helpers/setup.js';
 import { registerClient } from '../helpers/opaque-client.js';
 import { fakeProjectPayload, fakeSecretPayload, fakeTokenPayload } from '../helpers/fixtures.js';
 import { buildApprovalUrls, decisionToken } from '../../src/lib/approval-links.js';
@@ -13,13 +13,11 @@ describe('Approval-required bundle access', () => {
   async function setupApprovalProject() {
     const app = getApp();
     const config = getConfig();
-    const inviteCode = await createInviteCode();
     const { sessionCookie } = await registerClient({
       handle: 'alice',
       password: 'pass',
       serverSetup: config.OPAQUE_SERVER_SETUP,
       app,
-      inviteCode,
     });
 
     const projRes = await app.inject({
@@ -288,7 +286,6 @@ describe('Approval-required bundle access', () => {
       password: 'pass',
       serverSetup: config.OPAQUE_SERVER_SETUP,
       app,
-      inviteCode: await createInviteCode('other-invite'),
     });
 
     const list = await app.inject({

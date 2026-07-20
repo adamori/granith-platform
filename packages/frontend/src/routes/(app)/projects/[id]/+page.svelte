@@ -15,9 +15,11 @@
   let newName = $state('');
   let newValue = $state('');
   let creating = $state(false);
+  let addError = $state('');
   let editingId = $state<string | null>(null);
   let editName = $state('');
   let editValue = $state('');
+  let editError = $state('');
   let rotating = $state(false);
   let rotateError = $state('');
 
@@ -37,11 +39,14 @@
     e.preventDefault();
     if (!newName.trim() || !project) return;
     creating = true;
+    addError = '';
     try {
       await createSecret(projectId, project.pdk, newName.trim(), newValue);
       showAdd = false;
       newName = '';
       newValue = '';
+    } catch (e: any) {
+      addError = e.message || 'Could not save secret';
     } finally {
       creating = false;
     }
@@ -51,13 +56,19 @@
     editingId = sec.id;
     editName = sec.name;
     editValue = sec.value;
+    editError = '';
   }
 
   async function handleUpdate(e: Event) {
     e.preventDefault();
     if (!editingId || !project) return;
-    await updateSecret(projectId, project.pdk, editingId, editName, editValue);
-    editingId = null;
+    editError = '';
+    try {
+      await updateSecret(projectId, project.pdk, editingId, editName, editValue);
+      editingId = null;
+    } catch (e: any) {
+      editError = e.message || 'Could not update secret';
+    }
   }
 
   async function handleDelete(secretId: string, name: string) {
@@ -134,9 +145,10 @@
     <form onsubmit={handleAdd} style="display: flex; flex-direction: column; gap: 14px;">
       <Field id="new-name" label="Name" bind:value={newName} placeholder="SECRET_NAME" autofocus />
       <Field id="new-value" type="textarea" label="Value" bind:value={newValue} placeholder="Secret value…" rows={3} />
+      {#if addError}<p class="sp-alert sp-alert--danger">{addError}</p>{/if}
       <div style="display: flex; gap: 8px;">
         <Button type="submit" disabled={creating || !newName.trim()}>{creating ? '…' : 'save'}</Button>
-        <Button variant="link" onclick={() => { showAdd = false; newName = ''; newValue = ''; }}>cancel</Button>
+        <Button variant="link" onclick={() => { showAdd = false; newName = ''; newValue = ''; addError = ''; }}>cancel</Button>
       </div>
     </form>
   </Glass>
@@ -154,9 +166,10 @@
           <form onsubmit={handleUpdate} style="display: flex; flex-direction: column; gap: 12px;">
             <Field id="en-{secret.id}" label="Name" bind:value={editName} />
             <Field id="ev-{secret.id}" label="Value" type="textarea" bind:value={editValue} rows={3} />
+            {#if editError}<p class="sp-alert sp-alert--danger">{editError}</p>{/if}
             <div style="display: flex; gap: 8px;">
               <Button type="submit">update</Button>
-              <Button variant="link" onclick={() => (editingId = null)}>cancel</Button>
+              <Button variant="link" onclick={() => { editingId = null; editError = ''; }}>cancel</Button>
             </div>
           </form>
         </Glass>

@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
+import { sql } from 'kysely';
 import { updateSecretBody, secretIdParam } from '../../schemas/secrets.js';
 import { logAudit } from '../../services/audit.js';
+import { assertStorageAvailable, base64Bytes } from '../../services/limits.js';
 import { NotFoundError } from '../../lib/errors.js';
 
 export async function secretByIdRoutes(app: FastifyInstance) {
@@ -13,6 +15,28 @@ export async function secretByIdRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const { id: projectId, sid } = request.params;
     const { wrapped_item_key, wik_nonce, name_ct, name_nonce, value_ct, value_nonce } = request.body;
+
+    // Charge only the positive delta vs the row currently stored.
+    const existing = await db
+      .selectFrom('secrets')
+      .where('id', '=', sid)
+      .where('project_id', '=', projectId)
+      .where('owner_id', '=', request.user!.id)
+      .where('deleted_at', 'is', null)
+      .select(
+        sql<number>`octet_length(wrapped_item_key) + octet_length(wik_nonce) + octet_length(name_ct) + octet_length(name_nonce) + octet_length(value_ct) + octet_length(value_nonce)`.as('bytes'),
+      )
+      .executeTakeFirst();
+
+    if (!existing) {
+      throw new NotFoundError('Secret not found');
+    }
+
+    const newBytes =
+      base64Bytes(wrapped_item_key) + base64Bytes(wik_nonce) +
+      base64Bytes(name_ct) + base64Bytes(name_nonce) +
+      base64Bytes(value_ct) + base64Bytes(value_nonce);
+    await assertStorageAvailable(db, request.user!.id, newBytes - Number(existing.bytes));
 
     const result = await db
       .updateTable('secrets')

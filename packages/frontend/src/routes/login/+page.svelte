@@ -32,7 +32,7 @@
   subtitle="Your password derives the key that unwraps your project keys. The server never sees it."
 >
   {#snippet footer()}
-    have an invite? <a href="/register" style="color: var(--sp-accent);">register →</a>
+    need an account? <a href="/register" style="color: var(--sp-accent);">register →</a>
   {/snippet}
 
   <form onsubmit={handleSubmit} style="display: flex; flex-direction: column; gap: 14px;">

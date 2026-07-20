@@ -8,6 +8,7 @@
   let showCreate = $state(false);
   let newName = $state('');
   let creating = $state(false);
+  let createError = $state('');
 
   onMount(async () => {
     await loadProjects();
@@ -18,11 +19,14 @@
     e.preventDefault();
     if (!newName.trim()) return;
     creating = true;
+    createError = '';
     try {
       const id = await createProject(newName.trim());
       showCreate = false;
       newName = '';
       goto(`/projects/${id}`);
+    } catch (e: any) {
+      createError = e.message || 'Could not create project';
     } finally {
       creating = false;
     }
@@ -51,8 +55,9 @@
         <Field id="new-proj" label="Project name" bind:value={newName} placeholder="my-service-prod" autofocus />
       </div>
       <Button type="submit" disabled={creating || !newName.trim()}>{creating ? '…' : 'create'}</Button>
-      <Button variant="link" onclick={() => { showCreate = false; newName = ''; }}>cancel</Button>
+      <Button variant="link" onclick={() => { showCreate = false; newName = ''; createError = ''; }}>cancel</Button>
     </form>
+    {#if createError}<p class="sp-alert sp-alert--danger" style="margin-top: 12px;">{createError}</p>{/if}
   </Glass>
 {/if}
 

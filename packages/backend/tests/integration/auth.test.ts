@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig, createInviteCode } from '../helpers/setup.js';
+import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig, buildTestApp } from '../helpers/setup.js';
 import { registerClient, loginClient } from '../helpers/opaque-client.js';
 import * as opaque from '@serenity-kit/opaque';
 
@@ -9,17 +9,15 @@ describe('Auth', () => {
   beforeEach(async () => { await truncateAll(); });
 
   describe('Registration', () => {
-    it('full OPAQUE registration round-trip', async () => {
+    it('full OPAQUE registration round-trip (no invite required)', async () => {
       const app = getApp();
       const config = getConfig();
-      const inviteCode = await createInviteCode();
 
       const { userId, sessionCookie } = await registerClient({
         handle: 'alice',
         password: 'StrongP@ss1',
         serverSetup: config.OPAQUE_SERVER_SETUP,
         app,
-        inviteCode,
       });
 
       expect(userId).toBeDefined();
@@ -37,15 +35,12 @@ describe('Auth', () => {
     it('rejects duplicate handle', async () => {
       const app = getApp();
       const config = getConfig();
-      const inviteCode = await createInviteCode('invite-1');
-      await createInviteCode('invite-2');
 
       await registerClient({
         handle: 'bob',
         password: 'pass123',
         serverSetup: config.OPAQUE_SERVER_SETUP,
         app,
-        inviteCode: 'invite-1',
       });
 
       const startRes = await app.inject({
@@ -56,55 +51,29 @@ describe('Auth', () => {
       expect(startRes.statusCode).toBe(409);
     });
 
-    it('rejects invalid invite code', async () => {
-      const app = getApp();
-      const config = getConfig();
+    it('REGISTRATION_MODE=closed returns 403 on both start and finish', async () => {
+      const closedApp = await buildTestApp({ REGISTRATION_MODE: 'closed' });
+      try {
+        const startRes = await closedApp.inject({
+          method: 'POST',
+          url: '/api/auth/register/start',
+          payload: { handle: 'newuser', registrationRequest: 'fake' },
+        });
+        expect(startRes.statusCode).toBe(403);
 
-      const startRes = await app.inject({
-        method: 'POST',
-        url: '/api/auth/register/start',
-        payload: { handle: 'newuser', registrationRequest: 'fake' },
-      });
-      // start doesn't check invite, but finish does
-      // For start to fail we need an existing handle or valid OPAQUE — just test finish
-      const finishRes = await app.inject({
-        method: 'POST',
-        url: '/api/auth/register/finish',
-        payload: {
-          handle: 'newuser',
-          registrationRecord: 'fake',
-          invite_code: 'nonexistent',
-          kdf_params: { algorithm: 'argon2id', time_cost: 1, memory_cost: 65536, parallelism: 1, salt_length: 16 },
-        },
-      });
-      expect(finishRes.statusCode).toBe(400);
-      expect(finishRes.json().message).toContain('invite');
-    });
-
-    it('rejects used invite code', async () => {
-      const app = getApp();
-      const config = getConfig();
-      const inviteCode = await createInviteCode('one-time');
-
-      await registerClient({
-        handle: 'first',
-        password: 'pass',
-        serverSetup: config.OPAQUE_SERVER_SETUP,
-        app,
-        inviteCode: 'one-time',
-      });
-
-      const finishRes = await app.inject({
-        method: 'POST',
-        url: '/api/auth/register/finish',
-        payload: {
-          handle: 'second',
-          registrationRecord: 'fake',
-          invite_code: 'one-time',
-          kdf_params: { algorithm: 'argon2id', time_cost: 1, memory_cost: 65536, parallelism: 1, salt_length: 16 },
-        },
-      });
-      expect(finishRes.statusCode).toBe(400);
+        const finishRes = await closedApp.inject({
+          method: 'POST',
+          url: '/api/auth/register/finish',
+          payload: {
+            handle: 'newuser',
+            registrationRecord: 'fake',
+            kdf_params: { algorithm: 'argon2id', time_cost: 1, memory_cost: 65536, parallelism: 1, salt_length: 16 },
+          },
+        });
+        expect(finishRes.statusCode).toBe(403);
+      } finally {
+        await closedApp.close();
+      }
     });
   });
 
@@ -112,14 +81,12 @@ describe('Auth', () => {
     it('full OPAQUE login round-trip', async () => {
       const app = getApp();
       const config = getConfig();
-      const inviteCode = await createInviteCode();
 
       await registerClient({
         handle: 'alice',
         password: 'MyP@ss',
         serverSetup: config.OPAQUE_SERVER_SETUP,
         app,
-        inviteCode,
       });
 
       const { userId, sessionCookie } = await loginClient({
@@ -142,14 +109,12 @@ describe('Auth', () => {
     it('rejects wrong password', async () => {
       const app = getApp();
       const config = getConfig();
-      const inviteCode = await createInviteCode();
 
       await registerClient({
         handle: 'alice',
         password: 'RealPass',
         serverSetup: config.OPAQUE_SERVER_SETUP,
         app,
-        inviteCode,
       });
 
       try {
@@ -215,14 +180,12 @@ describe('Auth', () => {
     it('POST /auth/logout clears session', async () => {
       const app = getApp();
       const config = getConfig();
-      const inviteCode = await createInviteCode();
 
       const { sessionCookie } = await registerClient({
         handle: 'alice',
         password: 'pass',
         serverSetup: config.OPAQUE_SERVER_SETUP,
         app,
-        inviteCode,
       });
 
       const logoutRes = await app.inject({

@@ -16,12 +16,14 @@
   let loading = $state(true);
   let showMint = $state(false);
   let minting = $state(false);
+  let mintError = $state('');
   let mintedToken = $state<string | null>(null);
   let copied = $state(false);
   let ttlDays = $state(90);
   let editingTokenId = $state<string | null>(null);
   let allowlistInput = $state('');
   let savingAllowlist = $state(false);
+  let allowlistError = $state('');
 
   onMount(async () => {
     if (!project) await loadProjects();
@@ -33,6 +35,7 @@
   async function handleMint() {
     if (!project) return;
     minting = true;
+    mintError = '';
     try {
       const { lookupId, tokenKey, rawToken } = generateTokenPair();
       const tokenId = await createHashAsync(lookupId);
@@ -54,6 +57,8 @@
 
       const res = await listTokens(projectId);
       tokens = res.tokens;
+    } catch (e: any) {
+      mintError = e.message || 'Could not mint token';
     } finally {
       minting = false;
     }
@@ -80,11 +85,13 @@
   function startEditAllowlist(token: TokenResponse) {
     editingTokenId = token.token_id;
     allowlistInput = token.ip_allowlist?.join(', ') ?? '';
+    allowlistError = '';
   }
 
   async function saveAllowlist() {
     if (!editingTokenId) return;
     savingAllowlist = true;
+    allowlistError = '';
     try {
       const raw = allowlistInput.trim();
       const ip_allowlist = raw ? raw.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean) : null;
@@ -92,6 +99,8 @@
       editingTokenId = null;
       const res = await listTokens(projectId);
       tokens = res.tokens;
+    } catch (e: any) {
+      allowlistError = e.message || 'Could not update IP rules';
     } finally {
       savingAllowlist = false;
     }
@@ -128,8 +137,9 @@
         <Field id="ttl" label="TTL (days)" type="number" bind:value={ttlDays} min={1} max={1095} />
       </div>
       <Button onclick={handleMint} disabled={minting}>{minting ? 'minting…' : 'mint'}</Button>
-      <Button variant="link" onclick={() => (showMint = false)}>cancel</Button>
+      <Button variant="link" onclick={() => { showMint = false; mintError = ''; }}>cancel</Button>
     </div>
+    {#if mintError}<p class="sp-alert sp-alert--danger" style="margin-top: 14px;">{mintError}</p>{/if}
     <p class="sp-mini" style="margin-top: 14px;">
       tokens expire after the ttl, or until you revoke them — whichever first.
     </p>
@@ -184,9 +194,10 @@
               placeholder="192.168.1.0/24, 10.0.0.1/32"
               rows={2}
             />
+            {#if allowlistError}<p class="sp-alert sp-alert--danger">{allowlistError}</p>{/if}
             <div style="display: flex; gap: 8px;">
               <Button onclick={saveAllowlist} disabled={savingAllowlist}>{savingAllowlist ? 'saving…' : 'save'}</Button>
-              <Button variant="link" onclick={() => (editingTokenId = null)}>cancel</Button>
+              <Button variant="link" onclick={() => { editingTokenId = null; allowlistError = ''; }}>cancel</Button>
             </div>
           </div>
         {/if}

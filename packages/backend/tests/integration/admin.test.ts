@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig, createInviteCode } from '../helpers/setup.js';
+import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig } from '../helpers/setup.js';
 import { registerClient } from '../helpers/opaque-client.js';
 
 describe('Admin', () => {
@@ -9,69 +9,90 @@ describe('Admin', () => {
 
   const adminHeaders = { authorization: `Bearer test-admin-key-that-is-at-least-32-chars-long!` };
 
-  describe('Invites', () => {
-    it('creates invite codes', async () => {
-      const app = getApp();
-      const res = await app.inject({
-        method: 'POST',
-        url: '/api/admin/invites',
-        headers: adminHeaders,
-        payload: { ttl: '7d', count: 3 },
-      });
-      expect(res.statusCode).toBe(201);
-      expect(res.json().codes).toHaveLength(3);
-      expect(res.json().expires_at).toBeDefined();
+  async function registerAlice() {
+    const config = getConfig();
+    return registerClient({
+      handle: 'alice',
+      password: 'pass',
+      serverSetup: config.OPAQUE_SERVER_SETUP,
+      app: getApp(),
     });
+  }
 
-    it('lists invite codes', async () => {
+  describe('Limits', () => {
+    it('shows default limits for a user with no override', async () => {
       const app = getApp();
-      await createInviteCode('inv-1');
-      await createInviteCode('inv-2');
+      await registerAlice();
 
       const res = await app.inject({
         method: 'GET',
-        url: '/api/admin/invites',
+        url: '/api/admin/users/alice/limits',
         headers: adminHeaders,
       });
       expect(res.statusCode).toBe(200);
-      expect(res.json().invites).toHaveLength(2);
+      const body = res.json();
+      expect(body.handle).toBe('alice');
+      expect(body.limit_overrides).toBeNull();
+      expect(body.effective.storage_bytes).toBe(1048576);
+      expect(body.used_bytes).toBe(0);
     });
 
-    it('revokes (deletes) unused invite', async () => {
+    it('sets a storage override', async () => {
       const app = getApp();
-      await createInviteCode('to-revoke');
+      await registerAlice();
 
-      const res = await app.inject({
-        method: 'DELETE',
-        url: '/api/admin/invites/to-revoke',
+      const setRes = await app.inject({
+        method: 'PUT',
+        url: '/api/admin/users/alice/limits',
         headers: adminHeaders,
+        payload: { storage_bytes: 5000 },
       });
-      expect(res.statusCode).toBe(204);
+      expect(setRes.statusCode).toBe(200);
 
-      const listRes = await app.inject({
+      const showRes = await app.inject({
         method: 'GET',
-        url: '/api/admin/invites',
+        url: '/api/admin/users/alice/limits',
         headers: adminHeaders,
       });
-      expect(listRes.json().invites).toHaveLength(0);
+      const body = showRes.json();
+      expect(body.limit_overrides).toEqual({ storage_bytes: 5000 });
+      expect(body.effective.storage_bytes).toBe(5000);
     });
 
-    it('cannot revoke used invite', async () => {
+    it('clears a storage override', async () => {
       const app = getApp();
-      const config = getConfig();
-      const code = await createInviteCode('used-one');
+      await registerAlice();
 
-      await registerClient({
-        handle: 'alice',
-        password: 'pass',
-        serverSetup: config.OPAQUE_SERVER_SETUP,
-        app,
-        inviteCode: code,
+      await app.inject({
+        method: 'PUT',
+        url: '/api/admin/users/alice/limits',
+        headers: adminHeaders,
+        payload: { storage_bytes: 5000 },
       });
 
+      const clearRes = await app.inject({
+        method: 'PUT',
+        url: '/api/admin/users/alice/limits',
+        headers: adminHeaders,
+        payload: { storage_bytes: null },
+      });
+      expect(clearRes.statusCode).toBe(200);
+
+      const showRes = await app.inject({
+        method: 'GET',
+        url: '/api/admin/users/alice/limits',
+        headers: adminHeaders,
+      });
+      const body = showRes.json();
+      expect(body.limit_overrides).toBeNull();
+      expect(body.effective.storage_bytes).toBe(1048576);
+    });
+
+    it('returns 404 for an unknown handle', async () => {
+      const app = getApp();
       const res = await app.inject({
-        method: 'DELETE',
-        url: `/api/admin/invites/${code}`,
+        method: 'GET',
+        url: '/api/admin/users/nobody/limits',
         headers: adminHeaders,
       });
       expect(res.statusCode).toBe(404);
@@ -81,15 +102,7 @@ describe('Admin', () => {
   describe('Users', () => {
     it('lists users', async () => {
       const app = getApp();
-      const config = getConfig();
-      const inviteCode = await createInviteCode();
-      await registerClient({
-        handle: 'alice',
-        password: 'pass',
-        serverSetup: config.OPAQUE_SERVER_SETUP,
-        app,
-        inviteCode,
-      });
+      await registerAlice();
 
       const res = await app.inject({
         method: 'GET',
@@ -103,15 +116,7 @@ describe('Admin', () => {
 
     it('deletes user by handle', async () => {
       const app = getApp();
-      const config = getConfig();
-      const inviteCode = await createInviteCode();
-      await registerClient({
-        handle: 'alice',
-        password: 'pass',
-        serverSetup: config.OPAQUE_SERVER_SETUP,
-        app,
-        inviteCode,
-      });
+      await registerAlice();
 
       const delRes = await app.inject({
         method: 'DELETE',

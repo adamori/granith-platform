@@ -299,3 +299,63 @@ These are things the audit specifically checked and found done well:
 3. Address #3 and #5 as quick correctness/clarity fixes.
 4. Plan #4 and #6 before scaling beyond a single instance or hardening for GA.
 5. Treat #7–#9 as cleanup/observability backlog.
+
+---
+
+## Addendum — v1.0 release (2026-07-20)
+
+This addendum records how the v1.0 GA release changes the picture above. The original
+audit (2026-06-10) is left intact; the notes below supersede it only where they say so.
+
+### Invite gate removed — registration is now open
+
+Invite-only registration has been removed for v1.0. Anyone can sign up; no invite code is
+required. The admin invite endpoints and the `granith-admin invite` CLI commands are
+deleted, and the `invite_codes` table is kept only as historical data (migration `015`
+makes `users.invite_code_used` nullable).
+
+**Effect on finding #2 (handle enumeration).** Finding #2 observed that the same
+existence oracle it flagged on login (since fixed via the simulated-OPAQUE dummy response)
+is also present at registration — `register/start` / `register/finish` returns
+`409 Handle already taken` for a taken handle — and dismissed it as "more commonly
+accepted and **gated behind a valid invite**" (see lines ~123–125). **That justification
+no longer holds:** there is no invite gate. The revised stance is that a self-service
+signup flow inherently reveals whether a handle is taken (you cannot let someone claim a
+free handle without telling them which handles are free), so the register-time oracle is
+accepted as inherent to open registration rather than treated as a defect. It is not
+eliminated; the mitigation is the new registration rate limiting below, which raises the
+cost of bulk enumeration. The login-side oracle (#2's primary subject) remains fixed and
+unaffected.
+
+### New registration abuse controls
+
+- **Rate limits.** `register/start` is limited to **5 requests/min/IP** and
+  `register/finish` to **10 requests/day/IP**. These are the primary mitigation for the
+  register-time handle oracle above and for automated signup abuse.
+- **`REGISTRATION_MODE` brake.** A new env var `REGISTRATION_MODE` (`open` | `closed`,
+  default `open`) lets the operator reject all new signups without a redeploy. It is an
+  operational kill switch, not a security boundary.
+
+### Fair-use storage limits (abuse mitigation, not a security boundary)
+
+v1.0 adds a per-user cap on total encrypted storage (default **1 MB**), counting all
+user-owned encrypted bytes — secrets, project rows, tokens, and notification credentials,
+including soft-deleted projects. The existing `BODY_LIMIT` (512 KB) still bounds a single
+write; there are no object-count or per-secret caps. Per-user overrides live in
+`users.limit_overrides` (migration `016`), managed via
+`GET`/`PUT /api/admin/users/:handle/limits` and the `granith-admin limits` CLI.
+
+This is a **resource-abuse control, not a confidentiality or integrity boundary.** It does
+not touch the zero-knowledge guarantees and must not be relied on as a security control.
+Granith remains free; over-limit users contact the maintainer and have their limit raised
+at no cost.
+
+### Finding #4 (per-process rate limits) — unchanged
+
+The registration rate limits added above share the same per-process, in-memory
+implementation discussed in finding #4 and inherit its caveat: across multiple replicas
+each limit is effectively N× looser and all of it resets on restart. This remains
+**acceptable while the service runs as a single instance**, which it still does. If
+Granith is ever scaled horizontally, the registration limiters must move to a shared store
+alongside the other abuse-control state enumerated in #4. Finding #4 is otherwise
+unchanged and still accepted for the current single-instance deployment.

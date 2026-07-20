@@ -49,3 +49,16 @@ export class TooManyRequestsError extends AppError {
     super(429, message, 'TOO_MANY_REQUESTS');
   }
 }
+
+const LIMIT_CONTACT =
+  "Limits are raised for free — tell us what you're building: adam@alibiro.com or t.me/paneelmaja";
+
+export class LimitExceededError extends AppError {
+  constructor(opts?: { used?: number; limit?: number }) {
+    const message =
+      opts && opts.used !== undefined && opts.limit !== undefined
+        ? `Storage limit reached (using ${opts.used} of ${opts.limit} bytes). ${LIMIT_CONTACT}`
+        : `Storage limit reached. ${LIMIT_CONTACT}`;
+    super(403, message, 'LIMIT_EXCEEDED');
+  }
+}

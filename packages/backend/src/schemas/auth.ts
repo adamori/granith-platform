@@ -8,7 +8,6 @@ export const registerStartBody = z.object({
 export const registerFinishBody = z.object({
   handle: z.string().min(1).max(64),
   registrationRecord: z.string(),
-  invite_code: z.string().min(1),
   kdf_params: z.object({
     algorithm: z.string(),
     time_cost: z.number().int().positive(),
