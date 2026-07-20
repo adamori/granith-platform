@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig, createInviteCode } from '../helpers/setup.js';
+import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig } from '../helpers/setup.js';
 import { registerClient } from '../helpers/opaque-client.js';
 import { fakeProjectPayload, fakeSecretPayload } from '../helpers/fixtures.js';
 
@@ -11,13 +11,11 @@ describe('Audit log', () => {
   async function authedUserWithProject() {
     const app = getApp();
     const config = getConfig();
-    const inviteCode = await createInviteCode();
     const { sessionCookie } = await registerClient({
       handle: 'alice',
       password: 'pass',
       serverSetup: config.OPAQUE_SERVER_SETUP,
       app,
-      inviteCode,
     });
 
     const projRes = await app.inject({
@@ -84,13 +82,11 @@ describe('Audit log', () => {
   it('rejects audit access from non-owner', async () => {
     const { app, projectId } = await authedUserWithProject();
     const config = getConfig();
-    const inviteCode2 = await createInviteCode('inv2');
     const { sessionCookie: otherCookie } = await registerClient({
       handle: 'bob',
       password: 'pass',
       serverSetup: config.OPAQUE_SERVER_SETUP,
       app,
-      inviteCode: inviteCode2,
     });
 
     const res = await app.inject({

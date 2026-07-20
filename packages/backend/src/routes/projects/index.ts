@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { createProjectBody } from '../../schemas/projects.js';
 import { logAudit } from '../../services/audit.js';
+import { assertStorageAvailable, base64Bytes } from '../../services/limits.js';
 
 export async function projectListRoutes(app: FastifyInstance) {
   const f = app.withTypeProvider<ZodTypeProvider>();
@@ -34,6 +35,11 @@ export async function projectListRoutes(app: FastifyInstance) {
     schema: { body: createProjectBody },
   }, async (request, reply) => {
     const { name_ct, name_nonce, wrapped_pdk_for_user, wrap_nonce_for_user } = request.body;
+
+    const incomingBytes =
+      base64Bytes(name_ct) + base64Bytes(name_nonce) +
+      base64Bytes(wrapped_pdk_for_user) + base64Bytes(wrap_nonce_for_user);
+    await assertStorageAvailable(db, request.user!.id, incomingBytes);
 
     const project = await db
       .insertInto('projects')

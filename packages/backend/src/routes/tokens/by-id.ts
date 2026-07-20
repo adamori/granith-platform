@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
+import { sql } from 'kysely';
 import { tokenIdParam, patchTokenBody } from '../../schemas/tokens.js';
 import { logAudit } from '../../services/audit.js';
+import { assertStorageAvailable, base64Bytes } from '../../services/limits.js';
 import { NotFoundError } from '../../lib/errors.js';
 
 export async function tokenByIdRoutes(app: FastifyInstance) {
@@ -13,6 +15,29 @@ export async function tokenByIdRoutes(app: FastifyInstance) {
   }, async (request, reply) => {
     const tokenIdBuf = Buffer.from(request.params.token_id, 'hex');
     const { label_ct, label_nonce, ip_allowlist } = request.body;
+
+    // Only the encrypted label columns affect stored bytes; charge the positive delta.
+    if (label_ct !== undefined || label_nonce !== undefined) {
+      const existing = await db
+        .selectFrom('tokens')
+        .where('token_id', '=', tokenIdBuf)
+        .where('owner_id', '=', request.user!.id)
+        .where('revoked_at', 'is', null)
+        .select([
+          sql<number>`COALESCE(octet_length(label_ct), 0)`.as('ct_bytes'),
+          sql<number>`COALESCE(octet_length(label_nonce), 0)`.as('nonce_bytes'),
+        ])
+        .executeTakeFirst();
+
+      if (!existing) {
+        throw new NotFoundError('Token not found');
+      }
+
+      const newCt = label_ct !== undefined ? base64Bytes(label_ct) : Number(existing.ct_bytes);
+      const newNonce = label_nonce !== undefined ? base64Bytes(label_nonce) : Number(existing.nonce_bytes);
+      const delta = newCt + newNonce - (Number(existing.ct_bytes) + Number(existing.nonce_bytes));
+      await assertStorageAvailable(db, request.user!.id, delta);
+    }
 
     const updates: Record<string, any> = {};
     if (label_ct !== undefined) updates.label_ct = label_ct ? Buffer.from(label_ct, 'base64') : null;

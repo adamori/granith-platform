@@ -32,7 +32,7 @@
     <SpatialLogo size={22} />
     <span>granith</span>
     <span class="sp-topbar__divider"></span>
-    <Label accent>v0.5 · alpha</Label>
+    <Label accent>v1.0</Label>
   </a>
 
   <Glass depth={0.2} class="sp-topbar__nav">

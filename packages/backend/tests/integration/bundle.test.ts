@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig, createInviteCode } from '../helpers/setup.js';
+import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig } from '../helpers/setup.js';
 import { registerClient } from '../helpers/opaque-client.js';
 import { fakeProjectPayload, fakeSecretPayload, fakeTokenPayload } from '../helpers/fixtures.js';
 
@@ -11,13 +11,11 @@ describe('Bundle', () => {
   async function setupProjectWithTokenAndSecret() {
     const app = getApp();
     const config = getConfig();
-    const inviteCode = await createInviteCode();
     const { sessionCookie } = await registerClient({
       handle: 'alice',
       password: 'pass',
       serverSetup: config.OPAQUE_SERVER_SETUP,
       app,
-      inviteCode,
     });
 
     const projRes = await app.inject({
@@ -122,13 +120,11 @@ describe('Bundle', () => {
   it('rejects expired token', async () => {
     const app = getApp();
     const config = getConfig();
-    const inviteCode = await createInviteCode();
     const { sessionCookie } = await registerClient({
       handle: 'alice',
       password: 'pass',
       serverSetup: config.OPAQUE_SERVER_SETUP,
       app,
-      inviteCode,
     });
 
     const projRes = await app.inject({
@@ -161,13 +157,11 @@ describe('Bundle', () => {
   it('enforces IP allowlist', async () => {
     const app = getApp();
     const config = getConfig();
-    const inviteCode = await createInviteCode();
     const { sessionCookie } = await registerClient({
       handle: 'alice',
       password: 'pass',
       serverSetup: config.OPAQUE_SERVER_SETUP,
       app,
-      inviteCode,
     });
 
     const projRes = await app.inject({

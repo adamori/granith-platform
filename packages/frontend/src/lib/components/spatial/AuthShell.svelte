@@ -24,7 +24,7 @@
           <SpatialLogo size={24} />
           <span style="font: 700 16px var(--sp-font); letter-spacing: -0.01em;">granith</span>
           <span style="width: 1px; height: 14px; background: var(--sp-glass-edge); margin: 0 4px;"></span>
-          <Label accent>v0.5 · alpha</Label>
+          <Label accent>v1.0</Label>
         </div>
         {#if eyebrow}
           <div style="margin-bottom: 18px;"><Label accent>{eyebrow}</Label></div>

@@ -10,7 +10,6 @@ export function registerStart(handle: string, registrationRequest: string) {
 export function registerFinish(params: {
   handle: string;
   registrationRecord: string;
-  invite_code: string;
   kdf_params: {
     algorithm: string;
     time_cost: number;

@@ -4,6 +4,7 @@ import { createSecretBody } from '../../schemas/secrets.js';
 import { projectIdParam } from '../../schemas/projects.js';
 import { logAudit } from '../../services/audit.js';
 import { dispatchNotifications } from '../../services/notify/dispatch.js';
+import { assertStorageAvailable, base64Bytes } from '../../services/limits.js';
 import { NotFoundError } from '../../lib/errors.js';
 
 export async function secretListRoutes(app: FastifyInstance) {
@@ -57,6 +58,12 @@ export async function secretListRoutes(app: FastifyInstance) {
     await verifyProjectOwnership(db, request.params.id, request.user!.id);
 
     const { wrapped_item_key, wik_nonce, name_ct, name_nonce, value_ct, value_nonce } = request.body;
+
+    const incomingBytes =
+      base64Bytes(wrapped_item_key) + base64Bytes(wik_nonce) +
+      base64Bytes(name_ct) + base64Bytes(name_nonce) +
+      base64Bytes(value_ct) + base64Bytes(value_nonce);
+    await assertStorageAvailable(db, request.user!.id, incomingBytes);
 
     const secret = await db
       .insertInto('secrets')

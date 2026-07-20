@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { createTokenBody } from '../../schemas/tokens.js';
 import { projectIdParam } from '../../schemas/projects.js';
 import { logAudit } from '../../services/audit.js';
+import { assertStorageAvailable, base64Bytes, hexBytes } from '../../services/limits.js';
 import { NotFoundError } from '../../lib/errors.js';
 
 export async function tokenListRoutes(app: FastifyInstance) {
@@ -27,6 +28,11 @@ export async function tokenListRoutes(app: FastifyInstance) {
     }
 
     const { token_id, wrapped_pdk, wrap_nonce, scopes, label_ct, label_nonce, ip_allowlist, expires_at } = request.body;
+
+    const incomingBytes =
+      hexBytes(token_id) + base64Bytes(wrapped_pdk) + base64Bytes(wrap_nonce) +
+      base64Bytes(label_ct) + base64Bytes(label_nonce);
+    await assertStorageAvailable(db, request.user!.id, incomingBytes);
 
     await db
       .insertInto('tokens')

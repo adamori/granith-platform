@@ -2,7 +2,6 @@ import type { ColumnType, Generated, JSONColumnType } from 'kysely';
 
 export interface Database {
   users: UsersTable;
-  invite_codes: InviteCodesTable;
   sessions: SessionsTable;
   opaque_login_state: OpaqueLoginStateTable;
   projects: ProjectsTable;
@@ -20,7 +19,9 @@ export interface UsersTable {
   handle: string;
   kdf_params: JSONColumnType<KdfParams>;
   opaque_record: Buffer;
-  invite_code_used: string;
+  // Invite code redeemed at signup (invite-era accounts); otherwise null.
+  invite_code_used: string | null;
+  limit_overrides: ColumnType<Partial<UserLimits> | null, string | null | undefined, string | null>;
   created_at: ColumnType<Date, string | undefined, string | undefined>;
   updated_at: ColumnType<Date, string | undefined, string | undefined>;
 }
@@ -33,12 +34,8 @@ export interface KdfParams {
   salt_length: number;
 }
 
-export interface InviteCodesTable {
-  code: string;
-  created_by: string | null;
-  expires_at: Date;
-  used_at: Date | null;
-  used_by: string | null;
+export interface UserLimits {
+  storage_bytes: number;
 }
 
 export interface SessionsTable {

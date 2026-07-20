@@ -1,9 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
+import { sql } from 'kysely';
 import { notifyIdParam, patchNotificationBody } from '../../schemas/notifications.js';
 import { logAudit } from '../../services/audit.js';
 import { getDriver } from '../../services/notify/registry.js';
 import { sealCredential } from '../../lib/notify-crypto.js';
+import { assertStorageAvailable } from '../../services/limits.js';
 import { BadRequestError, NotFoundError } from '../../lib/errors.js';
 import { assertOwnsProjects } from './ownership.js';
 
@@ -22,7 +24,10 @@ export async function notificationByIdRoutes(app: FastifyInstance) {
       .selectFrom('notification_services')
       .where('id', '=', nid)
       .where('owner_id', '=', userId)
-      .select(['id', 'driver', 'watch_all_projects'])
+      .select([
+        'id', 'driver', 'watch_all_projects',
+        sql<number>`octet_length(credential_ct) + octet_length(credential_nonce)`.as('credential_bytes'),
+      ])
       .executeTakeFirst();
     if (!service) throw new NotFoundError('Notification service not found');
 
@@ -38,6 +43,7 @@ export async function notificationByIdRoutes(app: FastifyInstance) {
       const validation = driver.validateCredential(body.credential);
       if (!validation.ok) throw new BadRequestError(validation.error);
       const sealed = sealCredential(JSON.stringify(validation.normalized), app.config.NOTIFY_ENCRYPTION_KEY);
+      await assertStorageAvailable(db, userId, sealed.ct.length + sealed.nonce.length - Number(service.credential_bytes));
       updates.credential_ct = sealed.ct;
       updates.credential_nonce = sealed.nonce;
     }

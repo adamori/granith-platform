@@ -32,7 +32,7 @@ export async function checkSession(): Promise<boolean> {
   }
 }
 
-export async function register(handle: string, password: string, inviteCode: string, derivedKek: Uint8Array) {
+export async function register(handle: string, password: string, derivedKek: Uint8Array) {
   const { clientRegistrationState, registrationRequest } = opaqueClient.startRegistration(password);
   const { registrationResponse } = await authApi.registerStart(handle, registrationRequest);
 
@@ -45,7 +45,6 @@ export async function register(handle: string, password: string, inviteCode: str
   const result = await authApi.registerFinish({
     handle,
     registrationRecord,
-    invite_code: inviteCode,
     kdf_params: {
       algorithm: 'argon2id',
       time_cost: 3,

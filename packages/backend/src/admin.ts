@@ -25,45 +25,52 @@ async function request(method: string, path: string, body?: unknown) {
 }
 
 const program = new Command();
-program.name('granith-admin').version('0.1.0');
+program.name('granith-admin').version('1.0.0');
 
-const invite = program.command('invite');
+// Accepts plain bytes ("1048576") or human-readable forms ("512KB", "5MB"); 1024-based.
+function parseBytes(input: string): number {
+  const match = input.trim().match(/^(\d+(?:\.\d+)?)\s*(b|kb|mb|gb)?$/i);
+  if (!match) {
+    console.error(`Invalid byte value: ${input} (use e.g. 1048576, 512KB, 5MB)`);
+    process.exit(1);
+  }
+  const value = parseFloat(match[1]!);
+  const unit = (match[2] ?? 'b').toLowerCase();
+  const multiplier = unit === 'gb' ? 1024 ** 3 : unit === 'mb' ? 1024 ** 2 : unit === 'kb' ? 1024 : 1;
+  return Math.round(value * multiplier);
+}
 
-invite
-  .command('create')
-  .option('--ttl <duration>', 'TTL for invite code', '7d')
-  .option('--count <n>', 'Number of codes to generate', '1')
-  .action(async (opts) => {
-    const data = await request('POST', '/admin/invites', {
-      ttl: opts.ttl,
-      count: parseInt(opts.count, 10),
-    });
-    if (data?.codes) {
-      for (const code of data.codes) {
-        console.log(code);
-      }
-      console.log(`\nExpires: ${data.expires_at}`);
+const limits = program.command('limits');
+
+limits
+  .command('show')
+  .argument('<handle>')
+  .action(async (handle) => {
+    const data = await request('GET', `/admin/users/${encodeURIComponent(handle)}/limits`);
+    if (data) {
+      console.log(`Handle:          ${data.handle}`);
+      console.log(`Storage limit:   ${data.effective.storage_bytes} bytes`);
+      console.log(`Storage used:    ${data.used_bytes} bytes`);
+      console.log(`Override active: ${data.limit_overrides ? JSON.stringify(data.limit_overrides) : 'none (default)'}`);
     }
   });
 
-invite
-  .command('list')
-  .action(async () => {
-    const data = await request('GET', '/admin/invites');
-    if (data?.invites) {
-      console.log('Code\t\t\t\tExpires\t\t\t\tUsed');
-      for (const inv of data.invites) {
-        console.log(`${inv.code}\t${inv.expires_at}\t${inv.used_at ? 'Yes' : 'No'}`);
-      }
-    }
+limits
+  .command('set')
+  .argument('<handle>')
+  .argument('<bytes>', 'byte count, or human form like 5MB / 512KB')
+  .action(async (handle, bytes) => {
+    const storage_bytes = parseBytes(bytes);
+    await request('PUT', `/admin/users/${encodeURIComponent(handle)}/limits`, { storage_bytes });
+    console.log(`Storage limit for ${handle} set to ${storage_bytes} bytes.`);
   });
 
-invite
-  .command('revoke')
-  .argument('<code>')
-  .action(async (code) => {
-    await request('DELETE', `/admin/invites/${encodeURIComponent(code)}`);
-    console.log('Invite revoked.');
+limits
+  .command('clear')
+  .argument('<handle>')
+  .action(async (handle) => {
+    await request('PUT', `/admin/users/${encodeURIComponent(handle)}/limits`, { storage_bytes: null });
+    console.log(`Override cleared for ${handle}; back to default limits.`);
   });
 
 const user = program.command('user');

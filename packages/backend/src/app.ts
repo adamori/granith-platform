@@ -26,8 +26,8 @@ import { notificationListRoutes } from './routes/notifications/index.js';
 import { notificationByIdRoutes } from './routes/notifications/by-id.js';
 import { passwordRoutes } from './routes/auth/password.js';
 import { rotatePDKRoutes } from './routes/projects/rotate-pdk.js';
-import { inviteAdminRoutes } from './routes/admin/invites.js';
 import { userAdminRoutes } from './routes/admin/users.js';
+import { usageRoutes } from './routes/usage/index.js';
 import type { Kysely } from 'kysely';
 import type { Database } from './db/types.js';
 
@@ -103,6 +103,7 @@ export async function createApp(config: Config) {
       await protectedApp.register(notificationListRoutes);
       await protectedApp.register(notificationByIdRoutes);
       await protectedApp.register(approvalDashboardRoutes);
+      await protectedApp.register(usageRoutes);
     });
 
     // Machine token routes (no session, token-based auth in handler)
@@ -115,7 +116,6 @@ export async function createApp(config: Config) {
     const adminAuth = createAdminAuthHook(config.ADMIN_KEY);
     await apiApp.register(async (adminApp) => {
       adminApp.addHook('preHandler', adminAuth);
-      await adminApp.register(inviteAdminRoutes);
       await adminApp.register(userAdminRoutes);
     }, { prefix: '/admin' });
   }, { prefix: '/api' });

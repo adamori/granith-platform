@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig, createInviteCode } from '../helpers/setup.js';
+import { setupTestApp, teardownTestApp, truncateAll, getApp, getConfig } from '../helpers/setup.js';
 import { registerClient } from '../helpers/opaque-client.js';
 import { fakeProjectPayload } from '../helpers/fixtures.js';
 
@@ -10,13 +10,11 @@ describe('Projects', () => {
 
   async function authedUser(handle = 'alice') {
     const config = getConfig();
-    const inviteCode = await createInviteCode(`inv-${handle}`);
     return registerClient({
       handle,
       password: 'pass',
       serverSetup: config.OPAQUE_SERVER_SETUP,
       app: getApp(),
-      inviteCode,
     });
   }
 

@@ -5,7 +5,7 @@ import * as opaqueService from '../../services/opaque.js';
 import { createSession } from '../../services/session.js';
 import { logAudit } from '../../services/audit.js';
 import { setSessionCookie } from '../../lib/session-cookie.js';
-import { AppError, BadRequestError, ConflictError } from '../../lib/errors.js';
+import { AppError, ConflictError, ForbiddenError } from '../../lib/errors.js';
 
 export async function registerRoutes(app: FastifyInstance) {
   const f = app.withTypeProvider<ZodTypeProvider>();
@@ -18,6 +18,10 @@ export async function registerRoutes(app: FastifyInstance) {
       rateLimit: { max: 5, timeWindow: 60_000 },
     },
   }, async (request, reply) => {
+    if (config.REGISTRATION_MODE === 'closed') {
+      throw new ForbiddenError('Registration is temporarily closed');
+    }
+
     const { handle, registrationRequest } = request.body;
 
     const existing = await db
@@ -42,43 +46,28 @@ export async function registerRoutes(app: FastifyInstance) {
   f.post('/register/finish', {
     schema: { body: registerFinishBody },
     config: {
-      rateLimit: { max: 5, timeWindow: 60_000 },
+      rateLimit: { max: 10, timeWindow: 86_400_000 },
     },
   }, async (request, reply) => {
-    const { handle, registrationRecord, invite_code, kdf_params } = request.body;
+    if (config.REGISTRATION_MODE === 'closed') {
+      throw new ForbiddenError('Registration is temporarily closed');
+    }
+
+    const { handle, registrationRecord, kdf_params } = request.body;
 
     let user: { id: string; handle: string };
     try {
       user = await db.transaction().execute(async (tx) => {
-        const invite = await tx
-          .selectFrom('invite_codes')
-          .where('code', '=', invite_code)
-          .where('used_at', 'is', null)
-          .where('expires_at', '>', new Date())
-          .selectAll()
-          .forUpdate()
-          .executeTakeFirst();
-
-        if (!invite) {
-          throw new BadRequestError('Invalid or expired invite code');
-        }
-
         const newUser = await tx
           .insertInto('users')
           .values({
             handle,
             kdf_params: JSON.stringify(kdf_params) as any,
             opaque_record: Buffer.from(registrationRecord, 'base64'),
-            invite_code_used: invite_code,
+            invite_code_used: null,
           })
           .returning(['id', 'handle'])
           .executeTakeFirstOrThrow();
-
-        await tx
-          .updateTable('invite_codes')
-          .set({ used_at: new Date(), used_by: newUser.id })
-          .where('code', '=', invite_code)
-          .execute();
 
         return newUser;
       });
