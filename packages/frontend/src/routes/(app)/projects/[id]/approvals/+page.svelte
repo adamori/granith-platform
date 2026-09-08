@@ -2,7 +2,11 @@
   import { page } from '$app/state';
   import { onMount } from 'svelte';
   import { getProjectById, loadProjects, setRequireApproval } from '$lib/stores/projects.svelte.js';
-  import { listAccessRequests, approveAccessRequest, denyAccessRequest } from '$lib/api/approvals.js';
+  import {
+    listAccessRequests,
+    approveAccessRequest,
+    denyAccessRequest,
+  } from '$lib/api/approvals.js';
   import type { AccessRequestResponse } from '$lib/api/approvals.js';
   import { toast } from '$lib/stores/ui.svelte.js';
   import { Glass, PageHead, Button, Empty, ProjectTabs } from '$lib/components/spatial';
@@ -16,7 +20,9 @@
   let decidingId = $state<string | null>(null);
   let error = $state('');
 
-  const pending = $derived(requests.filter((r) => r.state === 'pending' && new Date(r.expires_at) > new Date()));
+  const pending = $derived(
+    requests.filter((r) => r.state === 'pending' && new Date(r.expires_at) > new Date()),
+  );
   const history = $derived(requests.filter((r) => !pending.includes(r)));
 
   async function refresh() {
@@ -70,7 +76,9 @@
   }
 </script>
 
-<PageHead back="projects" backHref="/projects" title={project?.name ?? '…'}>
+<svelte:head><title>Approvals · {project?.name ?? 'Project'} · Granith</title></svelte:head>
+
+<PageHead back="All projects" backHref="/projects" title={project?.name ?? '…'}>
   <p class="sp-mini" style="margin-top: 4px;">
     {pending.length} pending
   </p>
@@ -82,8 +90,10 @@
   <p class="sp-alert sp-alert--danger" style="margin-bottom: 18px;">{error}</p>
 {/if}
 
-<Glass depth={0.3} style="padding: 22px; margin-bottom: 18px;">
-  <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+<Glass style="padding: 22px; margin-bottom: 18px;">
+  <div
+    style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;"
+  >
     <div>
       <p style="margin: 0;">Require approval for bundle access</p>
       <p class="sp-mini" style="margin: 6px 0 0;">
@@ -92,8 +102,12 @@
           : 'OFF — tokens fetch the bundle directly.'}
       </p>
     </div>
-    <Button variant={project?.requireApproval ? 'danger' : 'primary'} onclick={handleToggle} disabled={toggling || !project}>
-      {toggling ? '…' : project?.requireApproval ? 'disable' : 'enable'}
+    <Button
+      variant={project?.requireApproval ? 'danger' : 'primary'}
+      onclick={handleToggle}
+      disabled={toggling || !project}
+    >
+      {toggling ? '…' : project?.requireApproval ? 'Disable' : 'Enable'}
     </Button>
   </div>
 </Glass>
@@ -105,11 +119,15 @@
     <Empty title="Nothing waiting." hint="Fetches that need your approval show up here." />
   {:else}
     <div class="sp-stack" style="margin-bottom: 24px;">
-      {#each pending as req, i (req.id)}
-        <div class="sp-row sp-parallax" style="--depth: {0.1 + (i % 4) * 0.04};">
-          <div style="display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
+      {#each pending as req (req.id)}
+        <div class="sp-row">
+          <div
+            style="display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap;"
+          >
             <div style="flex: 1; min-width: 0;">
-              <p class="sp-row__title" style="margin: 0;">bundle fetch from {req.requester_ip ?? 'unknown IP'}</p>
+              <p class="sp-row__title" style="margin: 0;">
+                bundle fetch from {req.requester_ip ?? 'unknown IP'}
+              </p>
               <p class="sp-row__value" style="margin: 6px 0 0;">
                 {req.requester_user_agent ?? 'unknown client'} · token {req.token_id.slice(0, 12)}…
               </p>
@@ -118,8 +136,16 @@
               </p>
             </div>
             <div style="display: flex; gap: 4px; flex-shrink: 0;">
-              <Button variant="primary" onclick={() => decide(req.id, 'approve')} disabled={decidingId === req.id}>approve</Button>
-              <Button variant="link-danger" onclick={() => decide(req.id, 'deny')} disabled={decidingId === req.id}>deny</Button>
+              <Button
+                variant="primary"
+                onclick={() => decide(req.id, 'approve')}
+                disabled={decidingId === req.id}>Approve</Button
+              >
+              <Button
+                variant="link-danger"
+                onclick={() => decide(req.id, 'deny')}
+                disabled={decidingId === req.id}>Deny</Button
+              >
             </div>
           </div>
         </div>
@@ -131,7 +157,7 @@
     <p class="sp-mini" style="margin-bottom: 10px;">recent decisions</p>
     <div class="sp-stack">
       {#each history as req (req.id)}
-        <div class="sp-row" style="opacity: 0.7;">
+        <div class="sp-row">
           <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
             <p class="sp-row__value" style="margin: 0;">
               {req.requester_ip ?? 'unknown IP'} · {fmt(req.created_at)}

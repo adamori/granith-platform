@@ -44,7 +44,11 @@
   const barPct = $derived(Math.min(100, usedPct));
   const level = $derived(usedPct >= 100 ? 'over' : usedPct >= 80 ? 'warn' : 'ok');
   const meterColor = $derived(
-    level === 'over' ? 'var(--sp-danger)' : level === 'warn' ? 'var(--sp-warm)' : 'var(--sp-accent)',
+    level === 'over'
+      ? 'var(--sp-danger)'
+      : level === 'warn'
+        ? 'var(--sp-warm)'
+        : 'var(--sp-accent)',
   );
 
   async function handleChangePassword(e: Event) {
@@ -80,7 +84,8 @@
 
       const { kek: newKek } = s.deriveKeys(newPassword, salt);
 
-      const { clientRegistrationState, registrationRequest } = opaqueClient.startRegistration(newPassword);
+      const { clientRegistrationState, registrationRequest } =
+        opaqueClient.startRegistration(newPassword);
       const { registrationResponse } = await authApi.changePasswordStart(registrationRequest);
       const { registrationRecord } = opaqueClient.finishRegistration({
         clientRegistrationState,
@@ -122,11 +127,13 @@
   }
 </script>
 
-<div class="sp-wrap--narrow">
-  <PageHead eyebrow="§04 · account" title="Settings" />
+<svelte:head><title>Settings · Granith</title></svelte:head>
 
-  <Glass depth={0.3} style="padding: clamp(20px, 3vw, 32px);">
-    <Label>§ usage</Label>
+<div class="sp-wrap--narrow">
+  <PageHead eyebrow="Your account" title="Settings" />
+
+  <Glass style="padding: clamp(20px, 3vw, 32px);">
+    <Label>Storage & usage</Label>
     {#if usageError}
       <p class="sp-alert sp-alert--danger" style="margin-top: 16px;">{usageError}</p>
     {:else if !usage}
@@ -144,7 +151,14 @@
             {Math.round(usedPct)}%
           </span>
         </div>
-        <div class="usage-meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(usedPct)}>
+        <div
+          class="usage-meter"
+          role="progressbar"
+          aria-label="Encrypted storage used"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(barPct)}
+        >
           <div class="usage-meter__fill" style="width: {barPct}%; background: {meterColor};"></div>
         </div>
         {#if level === 'over'}
@@ -173,7 +187,7 @@
         </div>
         <div class="usage-stat">
           <span class="usage-stat__n">{usage.objects.notification_services}</span>
-          <span class="usage-stat__l">notif. services</span>
+          <span class="usage-stat__l">services</span>
         </div>
       </div>
 
@@ -191,33 +205,68 @@
           class="sp-btn sp-btn--ghost"
           href={`mailto:${usage.contact.email}?subject=${encodeURIComponent('Granith storage raise')}`}
         >
-          email a raise request
+          Request more space
         </a>
-        <a class="sp-btn sp-btn--bordered" href={usage.contact.telegram} target="_blank" rel="noopener noreferrer">
-          telegram  →
+        <a
+          class="sp-btn sp-btn--bordered"
+          href={usage.contact.telegram}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Telegram →
         </a>
       </div>
     {/if}
   </Glass>
 
-  <Glass depth={0.3} style="padding: clamp(20px, 3vw, 32px); margin-top: 28px;">
-    <Label>§ password</Label>
-    <form onsubmit={handleChangePassword} style="display: flex; flex-direction: column; gap: 14px; margin-top: 18px;">
-      <Field id="cur" label="Current password" type="password" bind:value={currentPassword} autocomplete="current-password" required />
-      <Field id="nw" label="New password" type="password" bind:value={newPassword} autocomplete="new-password" required minlength={8} />
-      <Field id="conf" label="Confirm new password" type="password" bind:value={confirmPassword} autocomplete="new-password" required />
+  <Glass style="padding: clamp(20px, 3vw, 32px); margin-top: 28px;">
+    <Label>Change password</Label>
+    <form
+      onsubmit={handleChangePassword}
+      style="display: flex; flex-direction: column; gap: 14px; margin-top: 18px;"
+    >
+      <Field
+        id="cur"
+        label="Current password"
+        type="password"
+        bind:value={currentPassword}
+        autocomplete="current-password"
+        required
+      />
+      <Field
+        id="nw"
+        label="New password"
+        type="password"
+        bind:value={newPassword}
+        autocomplete="new-password"
+        required
+        minlength={8}
+      />
+      <Field
+        id="conf"
+        label="Confirm new password"
+        type="password"
+        bind:value={confirmPassword}
+        autocomplete="new-password"
+        required
+      />
       {#if error}<p class="sp-alert sp-alert--danger">{error}</p>{/if}
       {#if success}
-        <p class="sp-mini" style="color: var(--sp-success);">▸ password updated. running tokens are unaffected.</p>
+        <p class="sp-mini" style="color: var(--sp-success);">
+          ▸ password updated. running tokens are unaffected.
+        </p>
       {/if}
       <div style="display: flex; gap: 10px;">
-        <Button type="submit" disabled={changing || !currentPassword || !newPassword || !confirmPassword}>
-          {changing ? 're-wrapping keys…' : 'change password'}
+        <Button
+          type="submit"
+          disabled={changing || !currentPassword || !newPassword || !confirmPassword}
+        >
+          {changing ? 'Updating password…' : 'Change password'}
         </Button>
       </div>
     </form>
     <div style="margin-top: 18px;">
-      <Collapsible title="▸ how it works">
+      <Collapsible title="How it works">
         <ol class="sp-mini" style="margin: 0; padding-left: 18px; line-height: 1.8;">
           <li>Your old password unlocks your project keys in this tab.</li>
           <li>Your new password locks them again.</li>
@@ -247,14 +296,16 @@
   .usage-meter {
     height: 8px;
     border-radius: 999px;
-    background: rgba(4, 5, 10, 0.6);
+    background: var(--sp-glass-border);
     border: 1px solid var(--sp-glass-border);
     overflow: hidden;
   }
   .usage-meter__fill {
     height: 100%;
     border-radius: 999px;
-    transition: width 400ms ease, background 240ms ease;
+    transition:
+      width 400ms ease,
+      background 240ms ease;
   }
   .usage-stats {
     display: grid;
@@ -267,7 +318,7 @@
     flex-direction: column;
     gap: 6px;
     padding: 14px 16px;
-    background: rgba(4, 5, 10, 0.4);
+    background: var(--sp-bg);
     border: 1px solid var(--sp-glass-border);
     border-radius: 8px;
   }

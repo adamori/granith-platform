@@ -1,28 +1,72 @@
 ---
+import Logo from './Logo.astro';
 const year = new Date().getFullYear();
 ---
 
-<footer class="relative z-10 mt-32 border-t border-[#2e2e3e]/60 bg-[#0a0a0f]">
-  <div class="mx-auto max-w-6xl px-5 py-10 sm:px-8">
-    <div class="grid gap-8 sm:grid-cols-2">
-      <div>
-        <div class="text-sm font-semibold tracking-wide text-[#e4e4ef]">granith</div>
-        <p class="mt-2 max-w-xs text-xs leading-relaxed text-[#8b8ba0]">
-          A zero-knowledge secrets manager. Server stores ciphertext; your SDK decrypts.
-          Currently single-user.
-        </p>
-      </div>
-      <div class="sm:text-right">
-        <div class="text-[10px] uppercase tracking-[0.18em] text-[#8b8ba0]">product</div>
-        <ul class="mt-3 space-y-1.5 text-sm">
-          <li><a href="https://app.granith.dev" class="hover:text-[#6366f1]">open app</a></li>
-          <li><a href="https://app.granith.dev/register" class="hover:text-[#6366f1]">create account</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="mt-10 flex items-center justify-between border-t border-[#2e2e3e]/60 pt-5 text-[11px] text-[#8b8ba0]">
-      <span>© {year} granith</span>
-      <span>spec v1.0.0</span>
-    </div>
+<footer class="container">
+  <div class="footer-main">
+    <div><Logo size={25} /><p>Built for your next project.</p></div>
+    <nav aria-label="Footer navigation">
+      <a href="https://app.granith.dev/login">Sign in</a>
+      <a href="https://github.com/adamori/granith-platform">Source code ↗</a>
+      <a href="https://github.com/adamori/granith-platform/blob/main/SECURITY.md">Security</a>
+      <a href="mailto:adam@alibiro.com">Contact</a>
+    </nav>
+  </div>
+  <div class="footer-bottom">
+    <span>© {year} Granith</span><span>Open source. Yours to explore.</span>
   </div>
 </footer>
+<style>
+  footer {
+    padding-top: 64px;
+  }
+  .footer-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 30px;
+    padding-bottom: 40px;
+  }
+  p {
+    font-size: 12px;
+    margin-top: 12px;
+  }
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  nav a:hover {
+    color: var(--accent);
+  }
+  .footer-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-top: 1px solid var(--border);
+    padding: 24px 0;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  @media (max-width: 660px) {
+    footer {
+      padding-top: 40px;
+    }
+    .footer-main {
+      flex-direction: column;
+      align-items: flex-start;
+      padding-bottom: 30px;
+    }
+    nav {
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .footer-bottom {
+      font-size: 10px;
+    }
+  }
+</style>

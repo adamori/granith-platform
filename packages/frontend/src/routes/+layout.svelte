@@ -2,7 +2,7 @@
   import '../app.css';
   import { initCrypto } from '$lib/crypto/init.js';
   import { onMount } from 'svelte';
-  import { Stage, ConfirmModal, Toasts } from '$lib/components/spatial';
+  import { ConfirmModal, Toasts } from '$lib/components/spatial';
 
   let { children } = $props();
   let cryptoReady = $state(false);
@@ -18,7 +18,7 @@
   });
 </script>
 
-<Stage>
+<div class="sp-stage">
   {#if error}
     <div style="min-height: 100vh; display: grid; place-items: center;">
       <p class="sp-alert sp-alert--danger">{error}</p>
@@ -32,4 +32,4 @@
   {/if}
   <ConfirmModal />
   <Toasts />
-</Stage>
+</div>

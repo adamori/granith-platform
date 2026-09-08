@@ -6,10 +6,10 @@
   type Tab = { label: string; href: string; exact: boolean };
 
   const tabs = $derived<Tab[]>([
-    { label: 'secrets', href: `/projects/${projectId}`, exact: true },
-    { label: 'tokens', href: `/projects/${projectId}/tokens`, exact: false },
-    { label: 'approvals', href: `/projects/${projectId}/approvals`, exact: false },
-    { label: 'audit', href: `/projects/${projectId}/audit`, exact: false },
+    { label: 'Secrets', href: `/projects/${projectId}`, exact: true },
+    { label: 'Access tokens', href: `/projects/${projectId}/tokens`, exact: false },
+    { label: 'Approvals', href: `/projects/${projectId}/approvals`, exact: false },
+    { label: 'Activity', href: `/projects/${projectId}/audit`, exact: false },
   ]);
 
   function isActive(tab: Tab): boolean {
@@ -20,7 +20,11 @@
 
 <nav class="sp-tabs" aria-label="Project sections">
   {#each tabs as tab (tab.href)}
-    <a href={tab.href} class={isActive(tab) ? 'is-active' : ''} aria-current={isActive(tab) ? 'page' : undefined}>
+    <a
+      href={tab.href}
+      class={isActive(tab) ? 'is-active' : ''}
+      aria-current={isActive(tab) ? 'page' : undefined}
+    >
       {tab.label}
     </a>
   {/each}

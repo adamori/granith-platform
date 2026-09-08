@@ -37,22 +37,38 @@
   }
 </script>
 
+<svelte:head><title>Create account · Granith</title></svelte:head>
+
 <AuthShell
-  eyebrow="§01 · create account"
-  title="Create an account"
-  subtitle="Pick a handle and a strong password. It never leaves this device."
+  eyebrow="A fresh start"
+  title="Your secrets belong here."
+  subtitle="Choose a handle and a strong password to create your own private workspace."
 >
   {#snippet footer()}
-    already registered? <a href="/login" style="color: var(--sp-accent);">log in →</a>
+    Already have an account? <a href="/login" style="color: var(--sp-accent);">Sign in →</a>
   {/snippet}
 
   <form onsubmit={handleSubmit} style="display: flex; flex-direction: column; gap: 14px;">
     <Field id="handle" label="Handle" bind:value={handle} autocomplete="username" required />
-    <Field id="password" label="Password" type="password" bind:value={password} autocomplete="new-password" required />
-    <Field id="confirm" label="Confirm password" type="password" bind:value={confirmPassword} autocomplete="new-password" required />
+    <Field
+      id="password"
+      label="Password"
+      type="password"
+      bind:value={password}
+      autocomplete="new-password"
+      required
+    />
+    <Field
+      id="confirm"
+      label="Confirm password"
+      type="password"
+      bind:value={confirmPassword}
+      autocomplete="new-password"
+      required
+    />
     {#if error}<p class="sp-alert sp-alert--danger">{error}</p>{/if}
     <Button type="submit" variant="primary" block disabled={loading || !handle || !password}>
-      {loading ? 'Creating account…' : 'register  →'}
+      {loading ? 'Creating account…' : 'Create account →'}
     </Button>
   </form>
 </AuthShell>

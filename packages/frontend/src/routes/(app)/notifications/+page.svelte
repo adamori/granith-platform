@@ -1,9 +1,20 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { getProjects, getProjectById, loadProjects } from '$lib/stores/projects.svelte.js';
-  import { getServices, loadServices, addService, editService, removeService } from '$lib/stores/notifications.svelte.js';
+  import {
+    getServices,
+    loadServices,
+    addService,
+    editService,
+    removeService,
+  } from '$lib/stores/notifications.svelte.js';
   import { listDeliveries } from '$lib/api/notifications.js';
-  import type { NotificationService, NotificationDriver, ThrottleMode, DeliveryEntry } from '$lib/api/notifications.js';
+  import type {
+    NotificationService,
+    NotificationDriver,
+    ThrottleMode,
+    DeliveryEntry,
+  } from '$lib/api/notifications.js';
   import { ApiError } from '$lib/api/client.js';
   import { confirmModal, toast } from '$lib/stores/ui.svelte.js';
   import { Glass, PageHead, Button, Field, Empty, Collapsible } from '$lib/components/spatial';
@@ -32,7 +43,9 @@
 
   const services = $derived(getServices());
   const projects = $derived(getProjects());
-  const activeCount = $derived(services.filter((s) => s.state === 'enabled' || s.state === 'probation').length);
+  const activeCount = $derived(
+    services.filter((s) => s.state === 'enabled' || s.state === 'probation').length,
+  );
 
   onMount(async () => {
     await loadProjects();
@@ -124,7 +137,9 @@
     const throttle = {
       mode: throttleMode,
       ...(throttleMode === 'cooldown' ? { cooldown_minutes: Number(cooldownMinutes) } : {}),
-      ...(throttleMode === 'new_source_only' ? { new_source_window_minutes: Number(newSourceMinutes) } : {}),
+      ...(throttleMode === 'new_source_only'
+        ? { new_source_window_minutes: Number(newSourceMinutes) }
+        : {}),
     };
     const triggers = { bundle_pull: trigBundle, dashboard_read: trigDashboard };
 
@@ -231,12 +246,18 @@
     return `new source / ${s.throttle.new_source_window_minutes ?? 60}m`;
   }
 
-  const statusColor = { ok: 'var(--sp-accent)', warn: '#d9a441', danger: 'var(--sp-danger)' } as const;
+  const statusColor = {
+    ok: 'var(--sp-accent)',
+    warn: 'var(--sp-warm)',
+    danger: 'var(--sp-danger)',
+  } as const;
 </script>
+
+<svelte:head><title>Notifications · Granith</title></svelte:head>
 
 <PageHead title="Notifications">
   {#snippet actions()}
-    <Button onclick={openAdd}>+ add service</Button>
+    <Button onclick={openAdd}>+ Add service</Button>
   {/snippet}
   <p class="sp-mini" style="margin-top: 4px;">
     {activeCount} active · get pinged when your project secrets are fetched
@@ -244,7 +265,7 @@
 </PageHead>
 
 {#if showForm}
-  <Glass depth={0.3} style="padding: 22px; margin-bottom: 18px;">
+  <Glass style="padding: 22px; margin-bottom: 18px;">
     <div class="sp-stack--lg">
       <div style="display: flex; gap: 14px; flex-wrap: wrap;">
         <label class="sp-field" style="min-width: 160px;">
@@ -255,15 +276,25 @@
           </select>
         </label>
         <div style="flex: 1; min-width: 200px;">
-          <Field id="label" label="Label (optional)" bind:value={label} placeholder="ops telegram" />
+          <Field
+            id="label"
+            label="Label (optional)"
+            bind:value={label}
+            placeholder="ops telegram"
+          />
         </div>
       </div>
 
       {#if driver === 'telegram'}
         <div style="display: flex; gap: 14px; flex-wrap: wrap;">
           <div style="flex: 1; min-width: 220px;">
-            <Field id="tg-token" label="Bot token" type="password" bind:value={tgBotToken}
-              placeholder={editingId ? 'leave blank to keep current' : '123456:ABC-DEF…'} />
+            <Field
+              id="tg-token"
+              label="Bot token"
+              type="password"
+              bind:value={tgBotToken}
+              placeholder={editingId ? 'leave blank to keep current' : '123456:ABC-DEF…'}
+            />
           </div>
           <div style="flex: 1; min-width: 160px;">
             <Field id="tg-chat" label="Chat ID" bind:value={tgChatId} placeholder="123456789" />
@@ -272,18 +303,29 @@
       {:else}
         <div style="display: flex; gap: 14px; flex-wrap: wrap;">
           <div style="flex: 1; min-width: 220px;">
-            <Field id="po-token" label="App token" type="password" bind:value={poAppToken}
-              placeholder={editingId ? 'leave blank to keep current' : 'azGD…'} />
+            <Field
+              id="po-token"
+              label="App token"
+              type="password"
+              bind:value={poAppToken}
+              placeholder={editingId ? 'leave blank to keep current' : 'azGD…'}
+            />
           </div>
           <div style="flex: 1; min-width: 160px;">
-            <Field id="po-user" label="User key" type="password" bind:value={poUserKey}
-              placeholder={editingId ? 'leave blank to keep current' : 'uQi…'} />
+            <Field
+              id="po-user"
+              label="User key"
+              type="password"
+              bind:value={poUserKey}
+              placeholder={editingId ? 'leave blank to keep current' : 'uQi…'}
+            />
           </div>
         </div>
       {/if}
 
       <p class="sp-mini" style="margin: 0;">
-        Use a dedicated bot/app scoped to Granith only — these credentials are encrypted server-side, not end-to-end.
+        Use a dedicated bot/app scoped to Granith only — these credentials are encrypted
+        server-side, not end-to-end.
       </p>
 
       <div>
@@ -299,7 +341,11 @@
             {:else}
               {#each projects as p (p.id)}
                 <label class="sp-check">
-                  <input type="checkbox" checked={watchProjects.includes(p.id)} onchange={() => toggleProject(p.id)} />
+                  <input
+                    type="checkbox"
+                    checked={watchProjects.includes(p.id)}
+                    onchange={() => toggleProject(p.id)}
+                  />
                   <span>{p.name}</span>
                 </label>
               {/each}
@@ -313,12 +359,16 @@
         <label class="sp-check">
           <input type="checkbox" bind:checked={trigBundle} />
           <span>Machine token bundle pull</span>
-          <span class="sp-mini" title="Fires when a CI/consumer fetches secrets via an API token.">ⓘ</span>
+          <span class="sp-mini" title="Fires when a CI/consumer fetches secrets via an API token."
+            >ⓘ</span
+          >
         </label>
         <label class="sp-check">
           <input type="checkbox" bind:checked={trigDashboard} />
           <span>Owner dashboard secret reads</span>
-          <span class="sp-mini" title="Fires when you open the secrets page in the web UI. Noisier.">ⓘ</span>
+          <span class="sp-mini" title="Fires when you open the secrets page in the web UI. Noisier."
+            >ⓘ</span
+          >
         </label>
       </div>
 
@@ -333,11 +383,25 @@
         </label>
         {#if throttleMode === 'cooldown'}
           <div style="min-width: 140px;">
-            <Field id="cooldown" label="Cooldown (min)" type="number" bind:value={cooldownMinutes} min={1} max={1440} />
+            <Field
+              id="cooldown"
+              label="Cooldown (min)"
+              type="number"
+              bind:value={cooldownMinutes}
+              min={1}
+              max={1440}
+            />
           </div>
         {:else if throttleMode === 'new_source_only'}
           <div style="min-width: 160px;">
-            <Field id="newsrc" label="Source window (min)" type="number" bind:value={newSourceMinutes} min={1} max={1440} />
+            <Field
+              id="newsrc"
+              label="Source window (min)"
+              type="number"
+              bind:value={newSourceMinutes}
+              min={1}
+              max={1440}
+            />
           </div>
         {/if}
       </div>
@@ -345,8 +409,16 @@
       {#if error}<p class="sp-alert sp-alert--danger">{error}</p>{/if}
 
       <div style="display: flex; gap: 8px;">
-        <Button onclick={handleSave} disabled={saving}>{saving ? 'saving…' : editingId ? 'save' : 'add service'}</Button>
-        <Button variant="link" onclick={() => { showForm = false; resetForm(); }}>cancel</Button>
+        <Button onclick={handleSave} disabled={saving}
+          >{saving ? 'Saving…' : editingId ? 'Save changes' : 'Add service'}</Button
+        >
+        <Button
+          variant="link"
+          onclick={() => {
+            showForm = false;
+            resetForm();
+          }}>Cancel</Button
+        >
       </div>
     </div>
   </Glass>
@@ -355,19 +427,28 @@
 {#if loading}
   <p class="sp-mini">Loading…</p>
 {:else if services.length === 0}
-  <Empty title="No notification services yet." hint="Add one to get notified when your project secrets are fetched." />
+  <Empty
+    title="No notification services yet."
+    hint="Add one to get notified when your project secrets are fetched."
+  />
 {:else}
   <div class="sp-stack">
-    {#each services as s, i (s.id)}
+    {#each services as s (s.id)}
       {@const badge = statusBadge(s)}
-      <div class="sp-row sp-parallax" style="--depth: {0.1 + (i % 4) * 0.04};">
-        <div style="display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
+      <div class="sp-row">
+        <div
+          style="display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap;"
+        >
           <div style="flex: 1; min-width: 0;">
-            <p style="margin: 0; font: 500 13px var(--sp-font); color: var(--sp-text); letter-spacing: -0.01em;">
+            <p
+              style="margin: 0; font: 500 13px var(--sp-font); color: var(--sp-text); letter-spacing: -0.01em;"
+            >
               {s.label || s.driver}
               <span style="color: var(--sp-text-dim); font-weight: 400;"> · {s.driver}</span>
             </p>
-            <div style="display: flex; gap: 14px; margin-top: 6px; font-size: 11px; color: var(--sp-text-muted); flex-wrap: wrap; font-family: var(--sp-mono);">
+            <div
+              style="display: flex; gap: 14px; margin-top: 6px; font-size: 11px; color: var(--sp-text-muted); flex-wrap: wrap; font-family: var(--sp-mono);"
+            >
               <span>watches {watchSummary(s)}</span>
               <span>· {triggerSummary(s)}</span>
               <span>· {throttleSummary(s)}</span>
@@ -380,11 +461,11 @@
             </div>
           </div>
           <div style="display: flex; gap: 4px;">
-            <Button variant="link" onclick={() => openEdit(s)}>edit</Button>
+            <Button variant="link" onclick={() => openEdit(s)}>Edit</Button>
             {#if s.state === 'disabled' || s.state === 'permanently_disabled'}
-              <Button variant="link" onclick={() => handleReenable(s)}>re-enable</Button>
+              <Button variant="link" onclick={() => handleReenable(s)}>Re-enable</Button>
             {/if}
-            <Button variant="link-danger" onclick={() => handleDelete(s)}>delete</Button>
+            <Button variant="link-danger" onclick={() => handleDelete(s)}>Delete</Button>
           </div>
         </div>
       </div>
@@ -393,22 +474,26 @@
 {/if}
 
 <div style="margin-top: 22px;">
-  <Collapsible title="▸ recent deliveries (7-day log)">
-    <p class="sp-mini" style="margin: 0 0 12px;">
-      Delivery attempts from the last 7 days.
-    </p>
+  <Collapsible title="Recent deliveries (last 7 days)">
+    <p class="sp-mini" style="margin: 0 0 12px;">Delivery attempts from the last 7 days.</p>
     {#if deliveries.length === 0}
       <p class="sp-mini">No deliveries logged yet.</p>
     {:else}
       <div class="sp-stack" style="gap: 6px;">
         {#each deliveries as d (d.id)}
-          {@const tone = d.status === 'success' ? 'ok' : d.status === 'client_error' ? 'danger' : 'warn'}
-          <div style="display: flex; gap: 12px; align-items: baseline; font-size: 11px; font-family: var(--sp-mono); color: var(--sp-text-muted);">
-            <span style="color: {statusColor[tone]}; min-width: 90px;">● {d.status.replace('_', ' ')}</span>
+          {@const tone =
+            d.status === 'success' ? 'ok' : d.status === 'client_error' ? 'danger' : 'warn'}
+          <div
+            style="display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; overflow-wrap: anywhere; font-size: 11px; font-family: var(--sp-mono); color: var(--sp-text-muted);"
+          >
+            <span style="color: {statusColor[tone]}; min-width: 90px;"
+              >● {d.status.replace('_', ' ')}</span
+            >
             <span style="min-width: 120px;">{projectName(d.project_id)}</span>
             <span style="color: var(--sp-text-dim);">{d.trigger_type}</span>
             <span style="flex: 1;">{d.error_message ?? ''}</span>
-            <span style="color: var(--sp-text-dim);">{new Date(d.created_at).toLocaleString()}</span>
+            <span style="color: var(--sp-text-dim);">{new Date(d.created_at).toLocaleString()}</span
+            >
           </div>
         {/each}
       </div>
@@ -438,7 +523,7 @@
     overflow-y: auto;
   }
   select.sp-field__input {
-    appearance: none;
+    appearance: auto;
     cursor: pointer;
   }
 </style>
