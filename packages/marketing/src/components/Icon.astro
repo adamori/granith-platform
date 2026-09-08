@@ -1,0 +1,30 @@
+---
+const paths = {
+  arrow: 'M5 12h14m-5-5 5 5-5 5',
+  lock: 'M7 10V7a5 5 0 0 1 10 0v3M6 10h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2M12 14v3',
+  shield: 'M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7ZM8 12l3 3 5-5',
+  terminal: 'm5 7 4 5-4 5M13 17h6',
+  activity: 'M3 12h4l3-8 4 16 3-8h4',
+  key: 'M15 7a5 5 0 1 0 2 4l5-5-4-4-3 3M6 9h.01',
+  check: 'm5 12 4 4L19 6',
+  sun: 'M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+  moon: 'M20.8 13A9 9 0 0 1 11 3.2 9 9 0 1 0 20.8 13Z',
+};
+interface Props {
+  name: keyof typeof paths;
+  size?: number;
+}
+const { name, size = 20 } = Astro.props;
+---
+
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="1.7"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"><path d={paths[name]}></path></svg
+>

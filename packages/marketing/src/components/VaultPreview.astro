@@ -1,0 +1,236 @@
+---
+import Icon from './Icon.astro';
+const secrets = ['DATABASE_URL', 'PAYMENT_API_KEY', 'APP_SECRET'];
+---
+
+<figure class="vault-preview" aria-label="Example project in the Granith vault">
+  <div class="preview-window">
+    <div class="preview-bar">
+      <span class="workspace-mark"><Icon name="lock" size={15} />Your workspace</span><span
+        class="preview-avatar">G</span
+      >
+    </div>
+    <div class="preview-content">
+      <div class="project-heading">
+        <div><span class="project-label">PROJECT</span><h2>payments-production</h2></div><span
+          class="secret-count">3 secrets</span
+        >
+      </div>
+      <div class="preview-tabs" aria-hidden="true">
+        <span class="selected">Secrets</span><span>Access tokens</span><span>Activity</span>
+      </div>
+      <div class="secret-list">
+        {
+          secrets.map((name) => (
+            <div class="secret-row">
+              <>
+                <span class="key-icon">
+                  <Icon name="key" size={18} />
+                </span>
+                <div>
+                  <>
+                    <span class="secret-name">{name}</span>
+                    <span class="secret-value" aria-label="Hidden value">
+                      ••••••••••••
+                    </span>
+                  </>
+                </div>
+                <Icon name="lock" size={14} />
+              </>
+            </div>
+          ))
+        }
+      </div>
+      <div class="preview-footer"><Icon name="shield" size={14} />Encrypted on your device</div>
+    </div>
+  </div>
+  <figcaption><Icon name="check" size={16} />Only you hold the keys.</figcaption>
+</figure>
+<style>
+  .vault-preview {
+    position: relative;
+    margin: 16px 8px 26px 0;
+    isolation: isolate;
+  }
+  .vault-preview::before {
+    content: '';
+    position: absolute;
+    inset: -16px -12px 16px 12px;
+    z-index: -1;
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    transform: rotate(-4deg);
+  }
+  .preview-window {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 18px 50px #183b3210;
+    overflow: hidden;
+  }
+  .preview-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-soft);
+  }
+  .workspace-mark {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .preview-avatar {
+    width: 25px;
+    height: 25px;
+    display: grid;
+    place-items: center;
+    background: var(--leaf);
+    border-radius: 50%;
+    color: #183b32;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .preview-content {
+    padding: 25px 24px 18px;
+  }
+  .project-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .project-label {
+    color: var(--muted);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+  }
+  h2 {
+    margin-top: 8px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+  }
+  .secret-count {
+    padding: 5px 8px;
+    color: var(--accent);
+    background: var(--surface-soft);
+    border-radius: 5px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .preview-tabs {
+    display: flex;
+    gap: 22px;
+    border-bottom: 1px solid var(--border);
+    margin-top: 28px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .preview-tabs > span {
+    padding-bottom: 12px;
+  }
+  .preview-tabs .selected {
+    color: var(--accent);
+    border-bottom: 2px solid var(--accent);
+    font-weight: 600;
+  }
+  .secret-list {
+    padding-top: 10px;
+  }
+  .secret-row {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .secret-row:last-child {
+    border-bottom: none;
+  }
+  .key-icon {
+    display: grid;
+    place-items: center;
+    width: 35px;
+    height: 38px;
+    background: var(--surface-soft);
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .secret-row > div {
+    flex: 1;
+  }
+  .secret-row > :global(svg) {
+    color: var(--muted);
+  }
+  .secret-name {
+    display: block;
+    font: 500 10px var(--font-mono);
+  }
+  .secret-value {
+    display: block;
+    color: var(--muted);
+    font: 12px var(--font-mono);
+    letter-spacing: 2px;
+    margin-top: 8px;
+  }
+  .preview-footer {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 17px;
+    margin-top: 4px;
+    font-size: 10px;
+  }
+  figcaption {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: absolute;
+    bottom: -20px;
+    right: 20px;
+    padding: 13px 17px;
+    background: var(--leaf);
+    color: #183b32;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 7px;
+    transform: rotate(-3deg);
+    box-shadow: 0 4px 12px #183b3210;
+  }
+  @media (max-width: 480px) {
+    .vault-preview {
+      margin-inline: 0;
+    }
+    .preview-content {
+      padding: 20px 18px 18px;
+    }
+    .preview-bar {
+      padding: 14px 18px;
+    }
+    h2 {
+      font-size: 17px;
+    }
+    .secret-count {
+      font-size: 9px;
+    }
+    .preview-tabs {
+      gap: 20px;
+    }
+  }
+  @media (max-width: 360px) {
+    h2 {
+      font-size: 16px;
+    }
+    .secret-count {
+      display: none;
+    }
+  }
+</style>

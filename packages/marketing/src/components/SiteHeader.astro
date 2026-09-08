@@ -1,20 +1,96 @@
 ---
-import Logo from "./Logo.astro";
-import BetaChip from "./BetaChip.astro";
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
 ---
 
-<header class="relative z-20 border-b border-[#2e2e3e]/60 bg-[#0a0a0f]/80 backdrop-blur">
-  <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
-    <div class="flex items-center gap-4">
-      <Logo />
-      <BetaChip class="hidden sm:inline-flex" />
-    </div>
-    <nav class="flex items-center gap-2 text-xs sm:gap-5 sm:text-[13px] text-[#8b8ba0]">
-      <a
-        href="https://app.granith.dev"
-        class="rounded-sm border border-[#2e2e3e] px-3 py-1.5 text-[#e4e4ef] transition-colors hover:border-[#6366f1] hover:text-white"
-        >open app →</a
-      >
-    </nav>
-  </div>
+<header class="site-header container">
+  <Logo />
+  <nav aria-label="Main navigation">
+    <a class="nav-detail" href="#how-it-works">How it works</a>
+    <a class="nav-detail" href="#pricing">Pricing</a>
+    <a class="sign-in" href="https://app.granith.dev/login">Sign in</a>
+    <button
+      class="theme-toggle"
+      type="button"
+      aria-label="Switch to dark theme"
+      title="Switch to dark theme"
+      ><span class="moon"><Icon name="moon" size={17} /></span><span class="sun"
+        ><Icon name="sun" size={17} /></span
+      ></button
+    >
+    <a class="button button-primary" href="https://app.granith.dev/register"
+      >Get started <Icon name="arrow" size={16} /></a
+    >
+  </nav>
 </header>
+<style>
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    min-height: 104px;
+    border-bottom: 1px solid var(--border);
+  }
+  nav {
+    display: flex;
+    align-items: center;
+    gap: 27px;
+    font-size: 13px;
+  }
+  nav > a:not(.button):hover {
+    color: var(--accent);
+  }
+  .button {
+    min-height: 42px;
+    padding: 10px 16px;
+    gap: 12px;
+    white-space: nowrap;
+  }
+  .sign-in {
+    margin-left: 15px;
+  }
+  @media (max-width: 900px) {
+    nav {
+      gap: 16px;
+    }
+    .sign-in {
+      margin-left: 0;
+    }
+  }
+  @media (max-width: 660px) {
+    .site-header {
+      min-height: 84px;
+      gap: 14px;
+    }
+    .nav-detail,
+    .sign-in {
+      display: none;
+    }
+    nav {
+      gap: 10px;
+    }
+  }
+  @media (max-width: 380px) {
+    .site-header {
+      gap: 8px;
+    }
+    .site-header :global(.logo) {
+      gap: 7px;
+      font-size: 22px;
+    }
+    .site-header :global(.logo svg) {
+      width: 24px;
+      height: 24px;
+    }
+    .button {
+      padding-inline: 12px;
+    }
+    .button :global(svg) {
+      display: none;
+    }
+    nav {
+      gap: 7px;
+    }
+  }
+</style>
