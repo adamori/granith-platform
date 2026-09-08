@@ -16,7 +16,7 @@ Zero-knowledge secrets manager for application config and environment variables.
 
 ```
 packages/
-  backend/    Node 24 / Fastify 5 / TypeScript API server
+  backend/    Node 26 / Fastify 5 / TypeScript API server
   frontend/   SvelteKit SPA — vault UI (app.granith.dev)
   marketing/  Astro static site (granith.dev)
   sdk-go/     Go SDK + granith CLI — git submodule → github.com/adamori/granith
@@ -26,7 +26,7 @@ packages/
 
 ## Local development
 
-Requires Docker, [Bun](https://bun.sh), and Go 1.24+ (only for the SDK/CLI).
+Requires Docker, [Bun](https://bun.sh) 1.4.2, and Node.js 26.8.1. The Go SDK/CLI requires Go 1.26+ and selects Go 1.27.1 as its development toolchain. Runtime versions are recorded in `.bun-version`, `.node-version`, and `packages/sdk-go/.go-version`.
 
 Clone with the SDK submodule:
 
@@ -43,19 +43,19 @@ docker compose up -d
 # 2. Backend
 cd packages/backend
 cp ../../.env.example .env       # then edit OPAQUE_SERVER_SETUP, ADMIN_KEY, SESSION_SECRET
-bun install
-bun run migrate up
+bun install --frozen-lockfile
+bun src/db/migrate.ts up          # reads DATABASE_URL from .env
 bun run dev                       # listens on :3000
 
 # 3. Frontend (in a new terminal)
 cd packages/frontend
 cp .env.example .env              # leave PUBLIC_API_BASE_URL empty in dev (Vite proxy handles it)
-bun install
+bun install --frozen-lockfile
 bun run dev                       # listens on :5173
 
 # 4. Marketing site (optional)
 cd packages/marketing
-bun install
+bun install --frozen-lockfile
 bun run dev
 
 # 5. Go SDK / CLI (optional)
@@ -65,6 +65,10 @@ go install ./cmd/granith
 ```
 
 The backend `.env.example` documents required variables. `OPAQUE_SERVER_SETUP` must be generated once and kept stable for the lifetime of the database; see `packages/backend/src` for the helper. Registration is open by default; set `REGISTRATION_MODE=closed` to turn new signups off without a redeploy (see [Administration](#administration)).
+
+Run `bun run typecheck` and `bun run build` in the backend, and `bun run check` plus `bun run build` in frontend/marketing. Their checkers use TypeScript 6.0.3 because their programmatic APIs do not yet support TypeScript 7; the backend compiler uses TypeScript 7. The frontend's cookie 0.7.2 override patches SvelteKit's transitive cookie dependency while preserving its API; remove it when Kit accepts a patched release.
+
+Backend integration tests run with `bun run test`. Set `DATABASE_URL` to a disposable test database: setup applies migrations and fixtures delete application rows. The Go SDK's tests include a public libsodium fixture to verify browser/CLI encryption compatibility.
 
 ### Working on the SDK
 

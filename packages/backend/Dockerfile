@@ -4,7 +4,7 @@
 # ============================================================
 # Stage 1: Install all deps (cached on package.json + bun.lock)
 # ============================================================
-FROM oven/bun:1.3.12-alpine AS deps
+FROM oven/bun:1.4.2-alpine AS deps
 
 WORKDIR /app
 COPY tsconfig.base.json ./
@@ -26,7 +26,7 @@ RUN bun run build
 # ============================================================
 # Stage 3: Production-only deps
 # ============================================================
-FROM oven/bun:1.3.12-alpine AS prod-deps
+FROM oven/bun:1.4.2-alpine AS prod-deps
 
 WORKDIR /app/packages/backend
 COPY packages/backend/package.json packages/backend/bun.lock ./
@@ -35,7 +35,7 @@ RUN bun install --frozen-lockfile --production
 # ============================================================
 # Stage 4: Runtime — node Alpine, non-root, minimal layers
 # ============================================================
-FROM node:22-alpine AS runtime
+FROM node:26.8.1-alpine AS runtime
 
 RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app

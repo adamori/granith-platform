@@ -7,24 +7,32 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "prepare": "svelte-kit sync || echo ''",
+    "prepare": "svelte-kit sync",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.10",
-    "@sveltejs/kit": "^2.70.2",
+    "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "@tailwindcss/vite": "^4.3.3",
-    "svelte": "^5.56.9",
-    "svelte-check": "^4.7.5",
+    "svelte": "^5.57.0",
+    "svelte-check": "^4.7.6",
     "tailwindcss": "^4.3.3",
-    "typescript": "^7.0.2",
-    "vite": "^8.2.1"
+    "typescript": "~6.0.3",
+    "vite": "^8.2.2"
   },
   "dependencies": {
     "@serenity-kit/opaque": "^1.1.0",
     "libsodium-wrappers-sumo": "^0.8.4",
-    "bits-ui": "^2.18.1"
+    "bits-ui": "^2.19.1"
+  },
+  "overrides": {
+    "cookie": "0.7.2"
+  },
+  "packageManager": "bun@1.4.2",
+  "engines": {
+    "node": "^26.8.1",
+    "bun": ">=1.4.2"
   }
 }
