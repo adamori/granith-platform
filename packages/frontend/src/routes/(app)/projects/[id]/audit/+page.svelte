@@ -65,29 +65,35 @@
   }
 
   function actionClass(action: string) {
-    if (action.includes('delete') || action.includes('revoke')) return 'sp-audit__action sp-audit__action--danger';
+    if (action.includes('delete') || action.includes('revoke'))
+      return 'sp-audit__action sp-audit__action--danger';
     if (action.includes('create')) return 'sp-audit__action sp-audit__action--create';
     return 'sp-audit__action sp-audit__action--neutral';
   }
 </script>
 
-<PageHead back="projects" backHref="/projects" title={project?.name ?? '…'}>
+<svelte:head><title>Activity · {project?.name ?? 'Project'} · Granith</title></svelte:head>
+
+<PageHead back="All projects" backHref="/projects" title={project?.name ?? '…'}>
   <p class="sp-mini" style="margin-top: 4px;">
-    enough to spot a stolen token; not enough to leak which secret your process touched when.
+    A clear record of project activity, without exposing your secret values.
   </p>
 </PageHead>
 
 <ProjectTabs {projectId} />
 
-<Glass depth={0.25} style="padding: 14px; margin-bottom: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+<Glass
+  style="padding: 14px; margin-bottom: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;"
+>
   <Label>filter</Label>
   <select
     class="sp-audit__select"
+    aria-label="Filter activity"
     bind:value={filterAction}
     onchange={handleFilter}
   >
     {#each AUDIT_ACTIONS as a (a)}
-      <option value={a}>{a || 'all actions'}</option>
+      <option value={a}>{a || 'All actions'}</option>
     {/each}
   </select>
   <span class="sp-mini" style="margin-left: auto;">{entries.length} entries</span>
@@ -102,7 +108,7 @@
     <Empty title="No activity yet." hint="Actions on this project will show up here." />
   {/if}
 {:else}
-  <Glass depth={0.15} style="padding: 6px 0;">
+  <Glass style="padding: 6px 0;">
     {#each entries as entry (entry.id)}
       <div class="sp-audit__row">
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">

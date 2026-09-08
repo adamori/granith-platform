@@ -11,7 +11,12 @@
 </script>
 
 <div class="sp-collapsible">
-  <button type="button" class="sp-collapsible__head" onclick={() => (open = !open)} aria-expanded={open}>
+  <button
+    type="button"
+    class="sp-collapsible__head"
+    onclick={() => (open = !open)}
+    aria-expanded={open}
+  >
     <span class="sp-collapsible__chev">{open ? '▾' : '▸'}</span>
     <span>{title}</span>
   </button>
@@ -26,7 +31,7 @@
   .sp-collapsible {
     border: 1px solid var(--sp-glass-border);
     border-radius: 12px;
-    background: var(--sp-glass);
+    background: var(--sp-glass-bg);
   }
   .sp-collapsible__head {
     display: flex;
@@ -38,16 +43,15 @@
     border: none;
     cursor: pointer;
     text-align: left;
-    font: 500 12px var(--sp-font);
+    font: 500 13px var(--sp-font);
     letter-spacing: 0.02em;
-    text-transform: uppercase;
     color: var(--sp-text-muted);
   }
   .sp-collapsible__head:hover {
     color: var(--sp-text);
   }
   .sp-collapsible__chev {
-    color: var(--sp-accent-dim);
+    color: var(--sp-accent);
     font-size: 10px;
   }
   .sp-collapsible__body {

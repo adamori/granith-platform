@@ -69,7 +69,9 @@
     if (!mintedToken) return;
     await navigator.clipboard.writeText(mintedToken);
     copied = true;
-    setTimeout(() => { copied = false; }, 2000);
+    setTimeout(() => {
+      copied = false;
+    }, 2000);
   }
 
   function dismissToken() {
@@ -105,7 +107,12 @@
     allowlistError = '';
     try {
       const raw = allowlistInput.trim();
-      const ip_allowlist = raw ? raw.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean) : null;
+      const ip_allowlist = raw
+        ? raw
+            .split(/[,\n]+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : null;
       await patchToken(editingTokenId, { ip_allowlist });
       editingTokenId = null;
       const res = await listTokens(projectId);
@@ -120,9 +127,11 @@
   const liveCount = $derived(tokens.filter((t) => !t.revoked_at).length);
 </script>
 
-<PageHead back="projects" backHref="/projects" title={project?.name ?? '…'}>
+<svelte:head><title>Access tokens · {project?.name ?? 'Project'} · Granith</title></svelte:head>
+
+<PageHead back="All projects" backHref="/projects" title={project?.name ?? '…'}>
   {#snippet actions()}
-    <Button onclick={() => (showMint = !showMint)}>+ mint token</Button>
+    <Button onclick={() => (showMint = !showMint)}>+ Create token</Button>
   {/snippet}
   <p class="sp-mini" style="margin-top: 4px;">
     {liveCount} live · {tokens.length - liveCount} revoked
@@ -132,47 +141,70 @@
 <ProjectTabs {projectId} />
 
 {#if mintedToken}
-  <div class="sp-reveal sp-parallax" style="--depth: 0.4; margin-bottom: 18px;">
-    <p class="sp-reveal__title">▸ token minted — copy it now. it won't be shown again.</p>
+  <div class="sp-reveal" style="margin-bottom: 18px;">
+    <p class="sp-reveal__title">Token created. Copy it now — it won’t be shown again.</p>
     <div class="sp-reveal__value">{mintedToken}</div>
     <div class="sp-reveal__row">
-      <Button variant="primary" onclick={handleCopy}>{copied ? 'copied' : 'copy'}</Button>
-      <Button variant="link" onclick={dismissToken}>dismiss</Button>
+      <Button variant="primary" onclick={handleCopy}>{copied ? 'Copied' : 'Copy token'}</Button>
+      <Button variant="link" onclick={dismissToken}>Dismiss</Button>
     </div>
     <p class="sp-reveal__hint">clipboard doesn't auto-clear — clear it after pasting.</p>
   </div>
 {/if}
 
 {#if showMint}
-  <Glass depth={0.3} style="padding: 22px; margin-bottom: 18px;">
+  <Glass style="padding: 22px; margin-bottom: 18px;">
     <div style="display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap;">
       <div style="min-width: 200px;">
-        <Field id="ttl" label="TTL (days)" type="number" bind:value={ttlDays} min={1} max={1095} />
+        <Field
+          id="ttl"
+          label="Expires after (days)"
+          type="number"
+          bind:value={ttlDays}
+          min={1}
+          max={1095}
+        />
       </div>
-      <Button onclick={handleMint} disabled={minting}>{minting ? 'minting…' : 'mint'}</Button>
-      <Button variant="link" onclick={() => { showMint = false; mintError = ''; }}>cancel</Button>
+      <Button onclick={handleMint} disabled={minting}
+        >{minting ? 'Creating…' : 'Create token'}</Button
+      >
+      <Button
+        variant="link"
+        onclick={() => {
+          showMint = false;
+          mintError = '';
+        }}>Cancel</Button
+      >
     </div>
-    {#if mintError}<p class="sp-alert sp-alert--danger" style="margin-top: 14px;">{mintError}</p>{/if}
+    {#if mintError}<p class="sp-alert sp-alert--danger" style="margin-top: 14px;">
+        {mintError}
+      </p>{/if}
   </Glass>
 {/if}
 
 {#if loading}
   <p class="sp-mini">Loading…</p>
 {:else if tokens.length === 0}
-  <Empty title="No tokens minted yet." hint="Mint one to let a service fetch this project's bundle." />
+  <Empty
+    title="No access tokens yet."
+    hint="Create a token to connect an application to this project's secrets."
+  />
 {:else}
   <div class="sp-stack">
-    {#each tokens as token, i (token.token_id)}
-      <div
-        class="sp-row sp-parallax {token.revoked_at ? 'sp-row--revoked' : ''}"
-        style="--depth: {0.1 + (i % 4) * 0.04};"
-      >
-        <div style="display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
+    {#each tokens as token (token.token_id)}
+      <div class="sp-row {token.revoked_at ? 'sp-row--revoked' : ''}">
+        <div
+          style="display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap;"
+        >
           <div style="flex: 1; min-width: 0;">
-            <p style="margin: 0; font: 500 13px var(--sp-mono); color: var(--sp-text); letter-spacing: -0.01em;">
+            <p
+              style="margin: 0; font: 500 13px var(--sp-mono); color: var(--sp-text); letter-spacing: -0.01em;"
+            >
               {token.token_id.slice(0, 16)}…
             </p>
-            <div style="display: flex; gap: 14px; margin-top: 6px; font-size: 11px; color: var(--sp-text-muted); flex-wrap: wrap; font-family: var(--sp-mono);">
+            <div
+              style="display: flex; gap: 14px; margin-top: 6px; font-size: 11px; color: var(--sp-text-muted); flex-wrap: wrap; font-family: var(--sp-mono);"
+            >
               <span>expires {new Date(token.expires_at).toLocaleDateString()}</span>
               {#if token.last_used_at}
                 <span>used {new Date(token.last_used_at).toLocaleDateString()}</span>
@@ -189,13 +221,17 @@
           </div>
           {#if !token.revoked_at}
             <div style="display: flex; gap: 4px;">
-              <Button variant="link" onclick={() => startEditAllowlist(token)}>ip rules</Button>
-              <Button variant="link-danger" onclick={() => handleRevoke(token.token_id)}>revoke</Button>
+              <Button variant="link" onclick={() => startEditAllowlist(token)}>IP rules</Button>
+              <Button variant="link-danger" onclick={() => handleRevoke(token.token_id)}
+                >Revoke</Button
+              >
             </div>
           {/if}
         </div>
         {#if editingTokenId === token.token_id}
-          <div style="border-top: 1px solid var(--sp-glass-border); padding-top: 14px; margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
+          <div
+            style="border-top: 1px solid var(--sp-glass-border); padding-top: 14px; margin-top: 14px; display: flex; flex-direction: column; gap: 10px;"
+          >
             <Field
               id="al-{token.token_id}"
               label="IP allowlist"
@@ -204,11 +240,21 @@
               placeholder="10.0.0.0/8, 192.168.1.0/24"
               rows={2}
             />
-            <p class="sp-mini" style="margin: 0;">CIDR ranges, comma or newline separated. Empty = any IP.</p>
+            <p class="sp-mini" style="margin: 0;">
+              CIDR ranges, comma or newline separated. Empty = any IP.
+            </p>
             {#if allowlistError}<p class="sp-alert sp-alert--danger">{allowlistError}</p>{/if}
             <div style="display: flex; gap: 8px;">
-              <Button onclick={saveAllowlist} disabled={savingAllowlist}>{savingAllowlist ? 'saving…' : 'save'}</Button>
-              <Button variant="link" onclick={() => { editingTokenId = null; allowlistError = ''; }}>cancel</Button>
+              <Button onclick={saveAllowlist} disabled={savingAllowlist}
+                >{savingAllowlist ? 'Saving…' : 'Save'}</Button
+              >
+              <Button
+                variant="link"
+                onclick={() => {
+                  editingTokenId = null;
+                  allowlistError = '';
+                }}>Cancel</Button
+              >
             </div>
           </div>
         {/if}

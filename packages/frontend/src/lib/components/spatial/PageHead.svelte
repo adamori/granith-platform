@@ -26,7 +26,7 @@
     {:else if eyebrow}
       <Label accent>{eyebrow}</Label>
     {/if}
-    <h1 class="sp-h1" style="font-size: clamp(28px, 3.6vw, 44px);">{title}</h1>
+    <h1 class="sp-h1">{title}</h1>
     {#if children}{@render children()}{/if}
   </div>
   {#if actions}

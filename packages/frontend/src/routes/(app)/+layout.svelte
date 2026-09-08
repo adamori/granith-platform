@@ -1,7 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { checkSession, isAuthenticated, getUser, getKek, logout, unlock } from '$lib/stores/auth.svelte.js';
+  import {
+    checkSession,
+    isAuthenticated,
+    getUser,
+    getKek,
+    logout,
+    unlock,
+  } from '$lib/stores/auth.svelte.js';
   import { AppShell, AuthShell, Field, Button } from '$lib/components/spatial';
 
   let { children } = $props();
@@ -10,12 +17,6 @@
   let password = $state('');
   let unlocking = $state(false);
   let error = $state('');
-
-  $effect(() => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.setAttribute('data-authed', ready ? '1' : '0');
-    }
-  });
 
   onMount(async () => {
     if (!isAuthenticated()) {
@@ -55,18 +56,30 @@
 
 {#if needsUnlock}
   <AuthShell
-    eyebrow="§01 · session active"
-    title="Unlock vault."
+    eyebrow="Welcome back"
+    title="Unlock your workspace."
     subtitle="Enter your password to unlock your projects."
   >
     <form onsubmit={handleUnlock} style="display: flex; flex-direction: column; gap: 14px;">
-      <Field id="unlock-pw" label="Password" type="password" bind:value={password} autocomplete="current-password" required />
+      <Field
+        id="unlock-pw"
+        label="Password"
+        type="password"
+        bind:value={password}
+        autocomplete="current-password"
+        required
+      />
       {#if error}<p class="sp-alert sp-alert--danger">{error}</p>{/if}
       <Button type="submit" variant="primary" block disabled={unlocking || !password}>
-        {unlocking ? 'Unlocking…' : 'unlock  →'}
+        {unlocking ? 'Unlocking…' : 'Unlock workspace →'}
       </Button>
-      <button type="button" class="sp-btn sp-btn--link-danger" style="margin-top: 4px;" onclick={handleLogout}>
-        log out instead
+      <button
+        type="button"
+        class="sp-btn sp-btn--link-danger"
+        style="margin-top: 4px;"
+        onclick={handleLogout}
+      >
+        Log out instead
       </button>
     </form>
   </AuthShell>

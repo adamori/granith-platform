@@ -45,38 +45,33 @@
 
 <label class="sp-field" for={id}>
   {#if label}<span class="sp-field__label">{label}</span>{/if}
-  <span
-    class="chev chev--block chev--hover"
-    style="--chev-color: var(--sp-accent-dim); --chev-size: 8px; --chev-inset: -5px;"
-  >
-    {#if type === 'textarea'}
-      <textarea
-        {id}
-        class="sp-field__input sp-field__input--textarea"
-        {value}
-        {placeholder}
-        {autocomplete}
-        {required}
-        {rows}
-        {minlength}
-        oninput={handleInput}
-        use:focusOnMount
-      ></textarea>
-    {:else}
-      <input
-        {id}
-        {type}
-        class="sp-field__input"
-        {value}
-        {placeholder}
-        {autocomplete}
-        {required}
-        {min}
-        {max}
-        {minlength}
-        oninput={handleInput}
-        use:focusOnMount
-      />
-    {/if}
-  </span>
+  {#if type === 'textarea'}
+    <textarea
+      {id}
+      class="sp-field__input sp-field__input--textarea"
+      {value}
+      {placeholder}
+      {autocomplete}
+      {required}
+      {rows}
+      {minlength}
+      oninput={handleInput}
+      use:focusOnMount
+    ></textarea>
+  {:else}
+    <input
+      {id}
+      {type}
+      class="sp-field__input"
+      {value}
+      {placeholder}
+      {autocomplete}
+      {required}
+      {min}
+      {max}
+      {minlength}
+      oninput={handleInput}
+      use:focusOnMount
+    />
+  {/if}
 </label>
