@@ -99,6 +99,15 @@ granith-admin limits clear <handle>              # drop overrides, back to the 1
 
 ## Security
 
+SDK tokens have the form `grnth_<lookup_id>.<token_key>`. Keep the full token in the
+application: only `Authorization: Bearer grnth_<lookup_id>` is sent to the API.
+The token key stays in the SDK and decrypts the project key locally.
+
+Upgrade the API and SDK together: the API rejects the old full-token authorization
+header. Existing tokens work with the updated SDK without a database migration.
+For projects accessed with an older SDK, rotate the project key and replace their
+tokens after upgrading; the old SDK transmitted their decryption keys to the server.
+
 If you've found a vulnerability, please report it privately. See [`SECURITY.md`](./SECURITY.md).
 
 ## License

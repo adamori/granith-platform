@@ -13,7 +13,11 @@ receive their own v1.0.0 tag in that repo — not here.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Security
+
+- Keep SDK token decryption keys out of HTTP requests. Bundle fetches, approval
+  polls, and HEAD probes now authenticate with the lookup ID only; the API rejects
+  full tokens. Upgrade the SDK and API together. Existing token storage is unchanged.
 
 ## [1.0.0] - 2026-07-20
 

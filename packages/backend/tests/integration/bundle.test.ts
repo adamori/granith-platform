@@ -33,7 +33,7 @@ describe('Bundle', () => {
       payload: fakeSecretPayload(),
     });
 
-    const { body, rawToken } = fakeTokenPayload(projectId);
+    const { body, authToken, rawToken } = fakeTokenPayload(projectId);
     await app.inject({
       method: 'POST',
       url: `/api/projects/${projectId}/tokens`,
@@ -41,16 +41,16 @@ describe('Bundle', () => {
       payload: body,
     });
 
-    return { app, rawToken, projectId, sessionCookie };
+    return { app, authToken, rawToken, projectId, sessionCookie };
   }
 
   it('GET /v1/bundle returns bundle with ETag', async () => {
-    const { app, rawToken } = await setupProjectWithTokenAndSecret();
+    const { app, authToken } = await setupProjectWithTokenAndSecret();
 
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/bundle',
-      headers: { authorization: `Bearer ${rawToken}` },
+      headers: { authorization: `Bearer ${authToken}` },
     });
     expect(res.statusCode).toBe(200);
     expect(res.headers['etag']).toBeDefined();
@@ -62,12 +62,12 @@ describe('Bundle', () => {
   });
 
   it('returns 304 on If-None-Match', async () => {
-    const { app, rawToken } = await setupProjectWithTokenAndSecret();
+    const { app, authToken } = await setupProjectWithTokenAndSecret();
 
     const firstRes = await app.inject({
       method: 'GET',
       url: '/api/v1/bundle',
-      headers: { authorization: `Bearer ${rawToken}` },
+      headers: { authorization: `Bearer ${authToken}` },
     });
     const etag = firstRes.headers['etag'] as string;
 
@@ -75,7 +75,7 @@ describe('Bundle', () => {
       method: 'GET',
       url: '/api/v1/bundle',
       headers: {
-        authorization: `Bearer ${rawToken}`,
+        authorization: `Bearer ${authToken}`,
         'if-none-match': etag,
       },
     });
@@ -92,8 +92,37 @@ describe('Bundle', () => {
     expect(res.statusCode).toBe(401);
   });
 
+  it.each(['GET', 'HEAD'] as const)('rejects full tokens on %s requests', async (method) => {
+    const { app, rawToken } = await setupProjectWithTokenAndSecret();
+
+    const res = await app.inject({
+      method,
+      url: '/api/v1/bundle',
+      headers: { authorization: `Bearer ${rawToken}` },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it.each([
+    '',
+    'A'.repeat(42),
+    'A'.repeat(44),
+    `${'A'.repeat(43)}=`,
+    `${'A'.repeat(42)}!`,
+    `${'A'.repeat(42)}B`,
+    `${'A'.repeat(43)}.`,
+  ])('rejects malformed lookup ID %j', async (lookupId) => {
+    const res = await getApp().inject({
+      method: 'GET',
+      url: '/api/v1/bundle',
+      headers: { authorization: `Bearer grnth_${lookupId}` },
+    });
+    expect(res.statusCode).toBe(401);
+    expect(res.json().message).toBe('Invalid token format');
+  });
+
   it('rejects revoked token', async () => {
-    const { app, rawToken, projectId, sessionCookie } = await setupProjectWithTokenAndSecret();
+    const { app, authToken, projectId, sessionCookie } = await setupProjectWithTokenAndSecret();
 
     const listRes = await app.inject({
       method: 'GET',
@@ -111,7 +140,7 @@ describe('Bundle', () => {
     const bundleRes = await app.inject({
       method: 'GET',
       url: '/api/v1/bundle',
-      headers: { authorization: `Bearer ${rawToken}` },
+      headers: { authorization: `Bearer ${authToken}` },
     });
     expect(bundleRes.statusCode).toBe(401);
     expect(bundleRes.json().message).toContain('revoked');
@@ -135,7 +164,7 @@ describe('Bundle', () => {
     });
     const projectId = projRes.json().id;
 
-    const { body, rawToken } = fakeTokenPayload(projectId);
+    const { body, authToken } = fakeTokenPayload(projectId);
     body.expires_at = new Date(Date.now() - 1000).toISOString(); // already expired
 
     await app.inject({
@@ -148,7 +177,7 @@ describe('Bundle', () => {
     const bundleRes = await app.inject({
       method: 'GET',
       url: '/api/v1/bundle',
-      headers: { authorization: `Bearer ${rawToken}` },
+      headers: { authorization: `Bearer ${authToken}` },
     });
     expect(bundleRes.statusCode).toBe(401);
     expect(bundleRes.json().message).toContain('expired');
@@ -172,7 +201,7 @@ describe('Bundle', () => {
     });
     const projectId = projRes.json().id;
 
-    const { body, rawToken } = fakeTokenPayload(projectId);
+    const { body, authToken } = fakeTokenPayload(projectId);
     body.ip_allowlist = ['10.99.99.99']; // not the test client IP
 
     await app.inject({
@@ -185,7 +214,7 @@ describe('Bundle', () => {
     const bundleRes = await app.inject({
       method: 'GET',
       url: '/api/v1/bundle',
-      headers: { authorization: `Bearer ${rawToken}` },
+      headers: { authorization: `Bearer ${authToken}` },
     });
     expect(bundleRes.statusCode).toBe(403);
     expect(bundleRes.json().message).toContain('IP');
