@@ -32,7 +32,8 @@ export function fakeTokenPayload(projectId: string) {
   const lookupId = randomBytes(32);
   const tokenKey = randomBytes(32);
   const tokenId = createHash('sha256').update(lookupId).digest().toString('hex');
-  const rawToken = `grnth_${lookupId.toString('base64url')}.${tokenKey.toString('base64url')}`;
+  const authToken = `grnth_${lookupId.toString('base64url')}`;
+  const rawToken = `${authToken}.${tokenKey.toString('base64url')}`;
 
   return {
     body: {
@@ -46,6 +47,7 @@ export function fakeTokenPayload(projectId: string) {
       expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
     },
     rawToken,
+    authToken,
     tokenId,
     lookupId,
   };

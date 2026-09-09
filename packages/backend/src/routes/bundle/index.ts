@@ -50,19 +50,17 @@ interface AuthedToken {
 export async function bundleRoutes(app: FastifyInstance) {
   const db = app.db;
 
-  async function authenticateToken(request: any): Promise<AuthedToken> {
-    const header = request.headers.authorization;
-    if (!header?.startsWith('Bearer grnth_')) {
+  async function authenticateToken(request: FastifyRequest): Promise<AuthedToken> {
+    const match = /^Bearer grnth_([A-Za-z0-9_-]{43})$/.exec(request.headers.authorization ?? '');
+    if (!match) {
       throw new UnauthorizedError('Invalid token format');
     }
 
-    const raw = header.slice(7); // strip "Bearer "
-    const parts = raw.slice(6).split('.'); // strip "grnth_" then split
-    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    const lookupId = Buffer.from(match[1]!, 'base64url');
+    if (lookupId.length !== 32 || lookupId.toString('base64url') !== match[1]) {
       throw new UnauthorizedError('Invalid token format');
     }
 
-    const lookupId = Buffer.from(parts[0]!, 'base64url');
     const tokenId = hashTokenId(lookupId);
 
     const token = await db

@@ -35,7 +35,7 @@ describe('Approval-required bundle access', () => {
       payload: fakeSecretPayload(),
     });
 
-    const { body, rawToken } = fakeTokenPayload(projectId);
+    const { body, authToken } = fakeTokenPayload(projectId);
     await app.inject({
       method: 'POST',
       url: `/api/projects/${projectId}/tokens`,
@@ -51,15 +51,15 @@ describe('Approval-required bundle access', () => {
     });
     expect(patchRes.statusCode).toBe(200);
 
-    return { app, rawToken, projectId, sessionCookie };
+    return { app, authToken, projectId, sessionCookie };
   }
 
-  function fetchBundle(app: any, rawToken: string, requestId?: string) {
+  function fetchBundle(app: any, authToken: string, requestId?: string) {
     return app.inject({
       method: 'GET',
       url: '/api/v1/bundle',
       headers: {
-        authorization: `Bearer ${rawToken}`,
+        authorization: `Bearer ${authToken}`,
         ...(requestId ? { 'x-granith-approval-request': requestId } : {}),
       },
     });
@@ -89,9 +89,9 @@ describe('Approval-required bundle access', () => {
   }
 
   it('returns 202 with a request id and creates a single pending request', async () => {
-    const { app, rawToken } = await setupApprovalProject();
+    const { app, authToken } = await setupApprovalProject();
 
-    const res = await fetchBundle(app, rawToken);
+    const res = await fetchBundle(app, authToken);
     expect(res.statusCode).toBe(202);
     const requestId = res.headers['x-granith-approval-request'] as string;
     expect(requestId).toMatch(/^[0-9a-f-]{36}$/);
@@ -99,7 +99,7 @@ describe('Approval-required bundle access', () => {
     expect(res.json()).toMatchObject({ status: 'pending', request_id: requestId });
 
     // repeat fetch without header reuses the same active request
-    const again = await fetchBundle(app, rawToken);
+    const again = await fetchBundle(app, authToken);
     expect(again.statusCode).toBe(202);
     expect(again.headers['x-granith-approval-request']).toBe(requestId);
 
@@ -108,18 +108,18 @@ describe('Approval-required bundle access', () => {
   });
 
   it('polling with the request id stays 202 while pending', async () => {
-    const { app, rawToken } = await setupApprovalProject();
-    const first = await fetchBundle(app, rawToken);
+    const { app, authToken } = await setupApprovalProject();
+    const first = await fetchBundle(app, authToken);
     const requestId = first.headers['x-granith-approval-request'] as string;
 
-    const poll = await fetchBundle(app, rawToken, requestId);
+    const poll = await fetchBundle(app, authToken, requestId);
     expect(poll.statusCode).toBe(202);
     expect(poll.headers['x-granith-approval-request']).toBe(requestId);
   });
 
   it('approve link GET is read-only; POST approves; poll delivers exactly once', async () => {
-    const { app, rawToken } = await setupApprovalProject();
-    const first = await fetchBundle(app, rawToken);
+    const { app, authToken } = await setupApprovalProject();
+    const first = await fetchBundle(app, authToken);
     const requestId = first.headers['x-granith-approval-request'] as string;
 
     const row = await getRequestRow(app, requestId);
@@ -135,25 +135,25 @@ describe('Approval-required bundle access', () => {
     expect(post.statusCode).toBe(200);
     expect((await getRequestRow(app, requestId)).state).toBe('approved');
 
-    const poll = await fetchBundle(app, rawToken, requestId);
+    const poll = await fetchBundle(app, authToken, requestId);
     expect(poll.statusCode).toBe(200);
     expect(poll.json().secrets).toHaveLength(1);
     expect((await getRequestRow(app, requestId)).state).toBe('consumed');
 
     // one approval = one delivery
-    const rePoll = await fetchBundle(app, rawToken, requestId);
+    const rePoll = await fetchBundle(app, authToken, requestId);
     expect(rePoll.statusCode).toBe(409);
   });
 
   it('deny link results in 403 for the poller and decision is one-time', async () => {
-    const { app, rawToken } = await setupApprovalProject();
-    const first = await fetchBundle(app, rawToken);
+    const { app, authToken } = await setupApprovalProject();
+    const first = await fetchBundle(app, authToken);
     const requestId = first.headers['x-granith-approval-request'] as string;
 
     const post = await decide(app, requestId, 'deny');
     expect(post.statusCode).toBe(200);
 
-    const poll = await fetchBundle(app, rawToken, requestId);
+    const poll = await fetchBundle(app, authToken, requestId);
     expect(poll.statusCode).toBe(403);
 
     // second decision attempt (any action) hits the already-settled page
@@ -163,8 +163,8 @@ describe('Approval-required bundle access', () => {
   });
 
   it('rejects forged and expired decision tokens without leaking request details', async () => {
-    const { app, rawToken } = await setupApprovalProject();
-    const first = await fetchBundle(app, rawToken);
+    const { app, authToken } = await setupApprovalProject();
+    const first = await fetchBundle(app, authToken);
     const requestId = first.headers['x-granith-approval-request'] as string;
     const row = await getRequestRow(app, requestId);
     const exp = Math.floor(row.expires_at.getTime() / 1000);
@@ -197,8 +197,8 @@ describe('Approval-required bundle access', () => {
   });
 
   it('expires: stale pending request returns 410 on poll and via sweep', async () => {
-    const { app, rawToken } = await setupApprovalProject();
-    const first = await fetchBundle(app, rawToken);
+    const { app, authToken } = await setupApprovalProject();
+    const first = await fetchBundle(app, authToken);
     const requestId = first.headers['x-granith-approval-request'] as string;
 
     await app.db
@@ -207,12 +207,12 @@ describe('Approval-required bundle access', () => {
       .where('id', '=', requestId)
       .execute();
 
-    const poll = await fetchBundle(app, rawToken, requestId);
+    const poll = await fetchBundle(app, authToken, requestId);
     expect(poll.statusCode).toBe(410);
     expect((await getRequestRow(app, requestId)).state).toBe('expired');
 
     // a fresh fetch can start a new request now that the old one is terminal
-    const fresh = await fetchBundle(app, rawToken);
+    const fresh = await fetchBundle(app, authToken);
     expect(fresh.statusCode).toBe(202);
     expect(fresh.headers['x-granith-approval-request']).not.toBe(requestId);
 
@@ -228,12 +228,12 @@ describe('Approval-required bundle access', () => {
   });
 
   it('HEAD never creates an access request', async () => {
-    const { app, rawToken } = await setupApprovalProject();
+    const { app, authToken } = await setupApprovalProject();
 
     const res = await app.inject({
       method: 'HEAD',
       url: '/api/v1/bundle',
-      headers: { authorization: `Bearer ${rawToken}` },
+      headers: { authorization: `Bearer ${authToken}` },
     });
     expect(res.statusCode).toBe(200);
     expect(res.headers['etag']).toBeDefined();
@@ -243,8 +243,8 @@ describe('Approval-required bundle access', () => {
   });
 
   it('dashboard lists owner requests and approve/deny works once', async () => {
-    const { app, rawToken, sessionCookie } = await setupApprovalProject();
-    const first = await fetchBundle(app, rawToken);
+    const { app, authToken, sessionCookie } = await setupApprovalProject();
+    const first = await fetchBundle(app, authToken);
     const requestId = first.headers['x-granith-approval-request'] as string;
 
     const list = await app.inject({
@@ -271,14 +271,14 @@ describe('Approval-required bundle access', () => {
     });
     expect(again.statusCode).toBe(409);
 
-    const poll = await fetchBundle(app, rawToken, requestId);
+    const poll = await fetchBundle(app, authToken, requestId);
     expect(poll.statusCode).toBe(200);
   });
 
   it('dashboard endpoints are owner-scoped', async () => {
-    const { app, rawToken } = await setupApprovalProject();
+    const { app, authToken } = await setupApprovalProject();
     const config = getConfig();
-    const first = await fetchBundle(app, rawToken);
+    const first = await fetchBundle(app, authToken);
     const requestId = first.headers['x-granith-approval-request'] as string;
 
     const { sessionCookie: mallory } = await registerClient({
@@ -305,11 +305,11 @@ describe('Approval-required bundle access', () => {
   });
 
   it('records the full audit trail', async () => {
-    const { app, rawToken } = await setupApprovalProject();
-    const first = await fetchBundle(app, rawToken);
+    const { app, authToken } = await setupApprovalProject();
+    const first = await fetchBundle(app, authToken);
     const requestId = first.headers['x-granith-approval-request'] as string;
     await decide(app, requestId, 'approve');
-    await fetchBundle(app, rawToken, requestId);
+    await fetchBundle(app, authToken, requestId);
 
     const actions = (await app.db.selectFrom('audit_log').select(['action']).execute())
       .map((r: { action: string }) => r.action);
