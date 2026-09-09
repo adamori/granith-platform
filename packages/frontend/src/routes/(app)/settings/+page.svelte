@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getUser, getKek } from '$lib/stores/auth.svelte.js';
+  import { getUser, getKek, finishPasswordChange } from '$lib/stores/auth.svelte.js';
   import { getProjects, loadProjects } from '$lib/stores/projects.svelte.js';
   import * as authApi from '$lib/api/auth.js';
   import * as opaqueClient from '$lib/crypto/opaque.js';
@@ -103,7 +103,7 @@
         };
       });
 
-      await authApi.changePasswordFinish({
+      await finishPasswordChange({
         registrationRecord,
         kdf_params: {
           algorithm: 'argon2id',
@@ -113,7 +113,7 @@
           salt_length: 16,
         },
         rewrapped_pdks,
-      });
+      }, newKek);
 
       success = true;
       currentPassword = '';

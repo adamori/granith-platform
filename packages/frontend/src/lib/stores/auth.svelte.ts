@@ -84,6 +84,14 @@ export async function unlock(password: string) {
   _kek = kek;
 }
 
+export async function finishPasswordChange(
+  params: Parameters<typeof authApi.changePasswordFinish>[0],
+  kek: Uint8Array,
+) {
+  await authApi.changePasswordFinish(params);
+  _kek = kek;
+}
+
 export async function logout() {
   await authApi.logout();
   user = null;
